@@ -1,0 +1,57 @@
+{
+  "name": "attendance-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.10.0",
+    "@emotion/styled": "^11.10.0",
+    "@mui/icons-material": "^5.11.0",
+    "@mui/material": "^5.11.0",
+    "@react-google-maps/api": "^2.20.7",
+    "axios": "^1.3.0",
+    "date-fns": "^2.29.0",
+    "firebase": "^9.23.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^5.0.2",
+    "react": "^18.2.0",
+    "react-calendar": "^4.0.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.43.0",
+    "react-router-dom": "^6.8.0",
+    "react-scripts": "^5.0.1",
+    "recharts": "^2.15.4"
+  },
+  "scripts": {
+    "start": "set NODE_OPTIONS=--no-deprecation && craco start",
+    "prebuild": "node scripts/generate-firebase-config.js",
+    "build": "craco build",
+    "test": "craco test",
+    "eject": "react-scripts eject",
+    "generate-config": "node scripts/generate-firebase-config.js"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@craco/craco": "^7.1.0",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^14.3.1",
+    "@testing-library/user-event": "^14.6.1"
+  }
+}

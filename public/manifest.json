@@ -1,0 +1,15 @@
+{
+  "short_name": "AttendanceMS",
+  "name": "Attendance Management System",
+  "description": "Comprehensive employee attendance, leave, and claims management system",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1976d2",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "en-US",
+  "prefer_related_applications": false
+}

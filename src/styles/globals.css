@@ -1,0 +1,161 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* Mobile-first responsive design */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Loading spinner */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-bottom: 24px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Quick Action Buttons */
+.quick-action-btn {
+  background: linear-gradient(45deg, #1976d2, #42a5f5);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.quick-action-btn:hover {
+  background: linear-gradient(45deg, #1565c0, #1976d2);
+  transform: translateY(-2px);
+}
+
+.quick-action-btn.danger {
+  background: linear-gradient(45deg, #d32f2f, #f44336);
+}
+
+.quick-action-btn.success {
+  background: linear-gradient(45deg, #388e3c, #4caf50);
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.present {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+}
+
+.status-badge.absent {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.status-badge.late {
+  background-color: #fff3e0;
+  color: #ef6c00;
+}
+
+.status-badge.approved {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+}
+
+.status-badge.pending {
+  background-color: #fff3e0;
+  color: #ef6c00;
+}
+
+.status-badge.rejected {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 12px;
+  }
+  
+  .dashboard-card {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .quick-action-btn {
+    padding: 14px 20px;
+    font-size: 14px;
+  }
+}
+
+/* PWA styles */
+.pwa-install-prompt {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #1976d2;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.pwa-install-prompt:hover {
+  background: #1565c0;
+}
+
+/* Offline indicator */
+.offline-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #f44336;
+  color: white;
+  text-align: center;
+  padding: 8px;
+  font-size: 14px;
+  z-index: 1001;
+}

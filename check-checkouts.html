@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Forgotten Checkouts - Debug Tool</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #1976d2;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #1976d2;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .error-box {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th {
+            background: #1976d2;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+        .status-pending {
+            background: #fff3e0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: #f57c00;
+            font-weight: bold;
+        }
+        .status-approved {
+            background: #e8f5e9;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: #2e7d32;
+            font-weight: bold;
+        }
+        .status-rejected {
+            background: #ffebee;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: #c62828;
+            font-weight: bold;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        .filters {
+            margin: 20px 0;
+            padding: 15px;
+            background: #fafafa;
+            border-radius: 4px;
+        }
+        .filters label {
+            margin-right: 10px;
+            font-weight: 600;
+        }
+        .filters select, .filters input {
+            margin-right: 20px;
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Forgotten Checkouts Debug Tool</h1>
+
+        <div class="info-box">
+            <strong>Purpose:</strong> This tool helps you debug why General Managers can't see forgotten checkout requests.
+            It displays all forgotten checkouts in the database along with user information.
+        </div>
+
+        <div class="filters">
+            <label>Filter by Company:</label>
+            <select id="companyFilter">
+                <option value="">All Companies</option>
+            </select>
+
+            <label>Filter by Status:</label>
+            <select id="statusFilter">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+            </select>
+
+            <button onclick="loadData()">🔄 Refresh Data</button>
+            <button onclick="exportData()">📥 Export to JSON</button>
+        </div>
+
+        <h2>📊 Summary</h2>
+        <div id="summary" class="info-box">
+            Loading...
+        </div>
+
+        <h2>📋 All Forgotten Checkout Requests</h2>
+        <div id="checkoutsTable">Loading...</div>
+
+        <h2>👥 All Users (for reference)</h2>
+        <div id="usersTable">Loading...</div>
+
+        <h2>🔧 Hierarchy Check</h2>
+        <div class="filters">
+            <label>Select Manager:</label>
+            <select id="managerSelect"></select>
+            <button onclick="checkHierarchy()">Check Subordinates</button>
+        </div>
+        <div id="hierarchyResult"></div>
+    </div>
+
+    <!-- Firebase configuration (replace with your config) -->
+    <script type="module">
+        // NOTE: You need to paste your Firebase config here
+        // For now, this is a template. The user should replace this with their actual config.
+
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // REPLACE THIS WITH YOUR FIREBASE CONFIG
+        const firebaseConfig = {
+            // User needs to add their config here
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let allCheckouts = [];
+        let allUsers = [];
+
+        window.loadData = async function() {
+            try {
+                document.getElementById('checkoutsTable').innerHTML = 'Loading...';
+                document.getElementById('usersTable').innerHTML = 'Loading...';
+                document.getElementById('summary').innerHTML = 'Loading...';
+
+                // Load all users
+                const usersSnapshot = await getDocs(collection(db, 'users'));
+                allUsers = usersSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                // Load all forgotten checkouts
+                const checkoutsSnapshot = await getDocs(collection(db, 'forgottenCheckouts'));
+                allCheckouts = checkoutsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                renderSummary();
+                renderCheckoutsTable(allCheckouts);
+                renderUsersTable(allUsers);
+                populateFilters();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('checkoutsTable').innerHTML = `<div class="error-box">Error: ${error.message}</div>`;
+            }
+        };
+
+        function renderSummary() {
+            const pending = allCheckouts.filter(c => c.status === 'pending');
+            const approved = allCheckouts.filter(c => c.status === 'approved');
+            const rejected = allCheckouts.filter(c => c.status === 'rejected');
+
+            const companies = [...new Set(allCheckouts.map(c => c.company).filter(Boolean))];
+            const usersWithCheckouts = [...new Set(allCheckouts.map(c => c.userId))];
+
+            document.getElementById('summary').innerHTML = `
+                <strong>Total Checkouts:</strong> ${allCheckouts.length}<br>
+                <strong>Pending:</strong> ${pending.length} |
+                <strong>Approved:</strong> ${approved.length} |
+                <strong>Rejected:</strong> ${rejected.length}<br>
+                <strong>Companies with checkouts:</strong> ${companies.join(', ') || 'None'}<br>
+                <strong>Users with checkouts:</strong> ${usersWithCheckouts.length}<br>
+                <strong>Total Users:</strong> ${allUsers.length}
+            `;
+        }
+
+        function renderCheckoutsTable(checkouts) {
+            if (checkouts.length === 0) {
+                document.getElementById('checkoutsTable').innerHTML = '<div class="warning-box">No forgotten checkout requests found in the database.</div>';
+                return;
+            }
+
+            let html = '<table><thead><tr>';
+            html += '<th>ID</th><th>User</th><th>Company</th><th>Date</th><th>Status</th><th>Check In</th><th>Requested Check Out</th><th>Created At</th>';
+            html += '</tr></thead><tbody>';
+
+            checkouts.forEach(checkout => {
+                const user = allUsers.find(u => u.id === checkout.userId);
+                const userName = user ? `${user.firstName} ${user.lastName} (${user.position})` : checkout.userName || 'Unknown';
+                const company = checkout.company || user?.company || user?.originalCompanyName || 'N/A';
+
+                const formatDate = (d) => {
+                    if (!d) return 'N/A';
+                    const date = d.toDate ? d.toDate() : new Date(d);
+                    return date.toLocaleString();
+                };
+
+                html += `<tr>`;
+                html += `<td>${checkout.id.substring(0, 8)}...</td>`;
+                html += `<td>${userName}</td>`;
+                html += `<td><strong>${company}</strong></td>`;
+                html += `<td>${formatDate(checkout.date)}</td>`;
+                html += `<td><span class="status-${checkout.status}">${checkout.status || 'N/A'}</span></td>`;
+                html += `<td>${formatDate(checkout.checkInTime)}</td>`;
+                html += `<td>${formatDate(checkout.requestedCheckOutTime || checkout.checkOutTime)}</td>`;
+                html += `<td>${formatDate(checkout.createdAt)}</td>`;
+                html += `</tr>`;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('checkoutsTable').innerHTML = html;
+        }
+
+        function renderUsersTable(users) {
+            let html = '<table><thead><tr>';
+            html += '<th>Name</th><th>Email</th><th>Position</th><th>Company</th><th>Original Company</th>';
+            html += '</tr></thead><tbody>';
+
+            users.forEach(user => {
+                html += `<tr>`;
+                html += `<td>${user.firstName} ${user.lastName}</td>`;
+                html += `<td>${user.email}</td>`;
+                html += `<td>${user.position || 'N/A'}</td>`;
+                html += `<td><strong>${user.company || 'N/A'}</strong></td>`;
+                html += `<td>${user.originalCompanyName || 'N/A'}</td>`;
+                html += `</tr>`;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('usersTable').innerHTML = html;
+        }
+
+        function populateFilters() {
+            // Populate company filter
+            const companies = [...new Set(allCheckouts.map(c => c.company).filter(Boolean))];
+            const companyFilter = document.getElementById('companyFilter');
+            companyFilter.innerHTML = '<option value="">All Companies</option>';
+            companies.forEach(company => {
+                companyFilter.innerHTML += `<option value="${company}">${company}</option>`;
+            });
+
+            // Populate manager filter
+            const managers = allUsers.filter(u => u.position && (
+                u.position.includes('Manager') ||
+                u.position.includes('Director') ||
+                u.position.includes('CEO')
+            ));
+            const managerSelect = document.getElementById('managerSelect');
+            managerSelect.innerHTML = '<option value="">Select a manager...</option>';
+            managers.forEach(manager => {
+                managerSelect.innerHTML += `<option value="${manager.id}">${manager.firstName} ${manager.lastName} - ${manager.position} (${manager.company || manager.originalCompanyName})</option>`;
+            });
+        }
+
+        // Filter handlers
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+
+            document.getElementById('companyFilter').addEventListener('change', applyFilters);
+            document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        });
+
+        function applyFilters() {
+            const companyFilter = document.getElementById('companyFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            let filtered = allCheckouts;
+
+            if (companyFilter) {
+                filtered = filtered.filter(c => c.company === companyFilter);
+            }
+
+            if (statusFilter) {
+                filtered = filtered.filter(c => c.status === statusFilter);
+            }
+
+            renderCheckoutsTable(filtered);
+        }
+
+        window.exportData = function() {
+            const data = {
+                summary: {
+                    totalCheckouts: allCheckouts.length,
+                    totalUsers: allUsers.length,
+                    exportDate: new Date().toISOString()
+                },
+                checkouts: allCheckouts,
+                users: allUsers
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `forgotten-checkouts-debug-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        };
+
+        window.checkHierarchy = function() {
+            const managerId = document.getElementById('managerSelect').value;
+            if (!managerId) {
+                alert('Please select a manager');
+                return;
+            }
+
+            const manager = allUsers.find(u => u.id === managerId);
+            if (!manager) return;
+
+            // This is a simplified hierarchy check
+            const result = document.getElementById('hierarchyResult');
+            result.innerHTML = `<div class="info-box"><strong>Checking hierarchy for ${manager.firstName} ${manager.lastName}...</strong><br><br>`;
+            result.innerHTML += `Position: ${manager.position}<br>`;
+            result.innerHTML += `Company: ${manager.company || manager.originalCompanyName}<br><br>`;
+            result.innerHTML += `<strong>This feature requires the full hierarchy logic to be implemented.</strong><br>`;
+            result.innerHTML += `For now, check the browser console on the actual app for detailed hierarchy logs.</div>`;
+        };
+    </script>
+</body>
+</html>

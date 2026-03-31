@@ -1,0 +1,90 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isSameCompany(userId) {
+      return isAuthenticated() && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.companyName == 
+             firestore.get(/databases/(default)/documents/users/$(userId)).data.companyName;
+    }
+    
+    function isValidImageFile() {
+      return resource.contentType.matches('image/.*') && 
+             resource.size < 5 * 1024 * 1024; // 5MB limit
+    }
+    
+    function isValidDocumentFile() {
+      return (resource.contentType.matches('image/.*') || 
+              resource.contentType == 'application/pdf' ||
+              resource.contentType.matches('application/vnd.openxmlformats-officedocument.*')) &&
+             resource.size < 10 * 1024 * 1024; // 10MB limit
+    }
+
+    // Profile images
+    match /profiles/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin() || isSameCompany(userId));
+      allow write: if isAuthenticated() && (isOwner(userId) || isAdmin()) && isValidImageFile();
+      allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+
+    // Leave documents (medical certificates, etc.)
+    match /leaves/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAuthenticated() && isOwner(userId) && isValidDocumentFile();
+      allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+
+    // Claim receipts and documents
+    match /claims/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAuthenticated() && isOwner(userId) && isValidDocumentFile();
+      allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
+    }
+
+    // Company documents (admin only)
+    match /companies/{companyName}/{allPaths=**} {
+      allow read: if isAuthenticated() &&
+                     firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.companyName == companyName;
+      allow write: if isAdmin() &&
+                      firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.companyName == companyName;
+    }
+
+    // Company logos (admin can upload, everyone can read)
+    match /company-logos/{fileName} {
+      allow read: if isAuthenticated(); // All authenticated users can view logos
+      allow write: if isAdmin() && request.resource.size < 5 * 1024 * 1024 &&
+                      request.resource.contentType.matches('image/.*'); // Only admins can upload, max 5MB
+      allow delete: if isAdmin(); // Only admins can delete logos
+    }
+
+    // System documents and assets (admin only)
+    match /system/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Reports and exports (admin only)
+    match /reports/{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+
+    // Temporary uploads (24-hour TTL)
+    match /temp/{userId}/{allPaths=**} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+      allow delete: if true; // Allow cleanup by Cloud Functions
+    }
+  }
+}
