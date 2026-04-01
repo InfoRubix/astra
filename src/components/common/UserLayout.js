@@ -266,7 +266,11 @@ function UserLayout() {
       if (!user?.uid) return;
 
       try {
-        const usersQuery = query(collection(db, 'users'));
+        // Query only same-company users (respects Firestore rules)
+        const userCompany = user.company || user.originalCompanyName || '';
+        const usersQuery = userCompany
+          ? query(collection(db, 'users'), where('company', '==', userCompany))
+          : query(collection(db, 'users'));
         const usersSnapshot = await getDocs(usersQuery);
         const users = usersSnapshot.docs.map(doc => ({
           id: doc.id,

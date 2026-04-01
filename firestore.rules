@@ -42,9 +42,9 @@ service cloud.firestore {
       allow write: if isAnyAdmin();
     }
 
-    // Users collection
+    // Users collection - authenticated users can read (needed for team/leader checks)
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAnyAdmin();
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isOwner(userId) || isAnyAdmin();
       allow delete: if isAdmin();
