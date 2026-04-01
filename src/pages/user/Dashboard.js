@@ -44,7 +44,8 @@ import {
   WbSunny,
   Business,
   Feedback as FeedbackIcon,
-  Send
+  Send,
+  MyLocation
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { format, differenceInHours, differenceInMinutes } from 'date-fns';
@@ -52,6 +53,9 @@ import { collection, getDocs, query, where, orderBy, limit, doc, setDoc, updateD
 import { db } from '../../services/firebase';
 import { attendanceService } from '../../services/attendanceService';
 import { getRawCheckIn, getRawCheckOut, getCheckInTime, getCheckOutTime, isCurrentlyCheckedIn } from '../../utils/attendanceHelpers';
+import { useLoadScript } from '@react-google-maps/api';
+
+const libraries = ['geometry'];
 
 function UserDashboard() {
   const { user } = useAuth();
@@ -72,6 +76,13 @@ function UserDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [companySettings, setCompanySettings] = useState(null);
+  const [companyLocation, setCompanyLocation] = useState(null);
+
+  // Load Google Maps for distance calculation
+  useLoadScript({
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_PLACES_API_KEY,
+    libraries,
+  });
   const [checkOutDialog, setCheckOutDialog] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
@@ -86,28 +97,22 @@ function UserDashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  // Get user location using GPS
+  // Live GPS tracking
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            method: 'gps'
-          });
-        },
-        (error) => {
-          console.error('Error getting GPS location:', error);
-        },
-        {
-          enableHighAccuracy: true, // Use GPS satellites
-          timeout: 15000,
-          maximumAge: 0 // Fresh GPS reading
-        }
-      );
-    }
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setLocation({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          method: 'gps-live'
+        });
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   // Load dashboard data
@@ -125,7 +130,8 @@ function UserDashboard() {
         loadLeaveBalance(),
         loadRecentActivity(),
         loadNotifications(),
-        loadCompanySettings()
+        loadCompanySettings(),
+        loadCompanyLocation()
       ]);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -488,6 +494,65 @@ function UserDashboard() {
         workDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
       });
     }
+  };
+
+  // Load company/branch location for distance calculation
+  const loadCompanyLocation = async () => {
+    try {
+      const userCompanyId = user.companyId;
+      const userCompany = user.company || user.originalCompanyName || '';
+      let companyData = null;
+
+      if (userCompanyId) {
+        const { getDoc: getDocFn } = await import('firebase/firestore');
+        const companyDoc = await getDocFn(doc(db, 'companies', userCompanyId));
+        if (companyDoc.exists()) companyData = companyDoc.data();
+      }
+      if (!companyData && userCompany) {
+        const q = query(collection(db, 'companies'), where('name', '==', userCompany));
+        const snap = await getDocs(q);
+        if (!snap.empty) companyData = snap.docs[0].data();
+      }
+      if (!companyData) {
+        const all = await getDocs(collection(db, 'companies'));
+        if (all.size === 1) companyData = all.docs[0].data();
+      }
+
+      if (companyData?.location?.latitude && companyData?.location?.longitude) {
+        setCompanyLocation({
+          latitude: parseFloat(companyData.location.latitude),
+          longitude: parseFloat(companyData.location.longitude),
+          name: companyData.name
+        });
+        return;
+      }
+
+      // Fallback: branch location
+      if (user.branchId) {
+        const { getDoc: getDocFn } = await import('firebase/firestore');
+        const branchDoc = await getDocFn(doc(db, 'branches', user.branchId));
+        if (branchDoc.exists()) {
+          const branch = branchDoc.data();
+          if (branch.latitude && branch.longitude) {
+            setCompanyLocation({
+              latitude: parseFloat(branch.latitude),
+              longitude: parseFloat(branch.longitude),
+              name: branch.name
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Error loading company location:', err);
+    }
+  };
+
+  // Calculate distance using Google Maps Geometry (meters)
+  const calculateDistanceMeters = (lat1, lng1, lat2, lng2) => {
+    if (!window.google?.maps?.geometry) return null;
+    const from = new window.google.maps.LatLng(lat1, lng1);
+    const to = new window.google.maps.LatLng(lat2, lng2);
+    return window.google.maps.geometry.spherical.computeDistanceBetween(from, to);
   };
 
   const calculateWorkingHours = (checkIn, checkOut) => {
@@ -925,6 +990,47 @@ function UserDashboard() {
                   icon={loading ? <Schedule /> : getStatusIcon(getAttendanceStatus())}
                 />
                 
+                {/* Compact Location Badge */}
+                <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                  {(() => {
+                    const radius = user?.geofenceRadius || companySettings?.branchGeofenceRadius || companySettings?.geofenceRadius || 200;
+                    const dist = location && companyLocation ? calculateDistanceMeters(
+                      location.latitude, location.longitude,
+                      companyLocation.latitude, companyLocation.longitude
+                    ) : null;
+                    const isInRange = dist !== null && dist <= radius;
+                    const distDisplay = dist !== null
+                      ? (dist >= 1000 ? `${(dist / 1000).toFixed(1)} km` : `${Math.round(dist)}m`)
+                      : null;
+
+                    return (
+                      <>
+                        {!location ? (
+                          <Chip icon={<MyLocation />} label="Detecting GPS..." size="small" variant="outlined" />
+                        ) : distDisplay ? (
+                          <Chip
+                            icon={<MyLocation />}
+                            label={`${distDisplay} from office`}
+                            size="small"
+                            color={isInRange ? 'success' : 'error'}
+                            variant="filled"
+                          />
+                        ) : !companyLocation ? (
+                          <Chip icon={<Business />} label="Office location not set" size="small" color="warning" variant="outlined" />
+                        ) : null}
+                        {location && (
+                          <Chip
+                            label={`GPS ±${location.accuracy?.toFixed(0) || '?'}m`}
+                            size="small"
+                            variant="outlined"
+                            color={location.accuracy <= 50 ? 'success' : location.accuracy <= 100 ? 'primary' : 'warning'}
+                          />
+                        )}
+                      </>
+                    );
+                  })()}
+                </Box>
+
                 {/* Enhanced Check In/Out Buttons */}
                 <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mb: 3 }}>
                   <Button

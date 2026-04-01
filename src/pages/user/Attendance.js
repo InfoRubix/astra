@@ -1057,40 +1057,87 @@ function Attendance() {
                       Working time: {workingHours}
                     </Typography>
                   )}
-                  {location && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <LocationOn sx={{ fontSize: 16, mr: 0.5, color: 'success.main' }} />
-                      <Typography variant="caption" color="success.main" sx={{ fontWeight: 500 }}>
-                        Location verified
-                      </Typography>
-                    </Box>
-                  )}
                 </Box>
-                
-                {/* Live Distance from Office */}
-                {location && companyLocation && (() => {
-                  const dist = calculateDistanceMeters(
+
+                {/* Live Location & Distance Card */}
+                {(() => {
+                  const radius = user.geofenceRadius || companySettings?.branchGeofenceRadius || companySettings?.geofenceRadius || 200;
+                  const dist = location && companyLocation ? calculateDistanceMeters(
                     location.latitude, location.longitude,
                     companyLocation.latitude, companyLocation.longitude
-                  );
-                  const radius = user.geofenceRadius || companySettings?.branchGeofenceRadius || companySettings?.geofenceRadius || 200;
+                  ) : null;
                   const isInRange = dist !== null && dist <= radius;
-                  const distDisplay = dist >= 1000 ? `${(dist / 1000).toFixed(2)} km` : `${Math.round(dist)} m`;
+                  const distDisplay = dist !== null
+                    ? (dist >= 1000 ? `${(dist / 1000).toFixed(2)} km` : `${Math.round(dist)} m`)
+                    : null;
 
                   return (
                     <Box sx={{
-                      mb: 2, p: 1.5, borderRadius: 2,
-                      bgcolor: isInRange ? 'success.50' : 'error.50',
+                      mb: 2, p: 2, borderRadius: 2,
+                      bgcolor: location ? (isInRange ? 'success.50' : 'error.50') : 'grey.50',
                       border: '1px solid',
-                      borderColor: isInRange ? 'success.200' : 'error.200',
-                      textAlign: 'center'
+                      borderColor: location ? (isInRange ? 'success.200' : 'error.200') : 'grey.200'
                     }}>
-                      <Typography variant="body2" fontWeight={700} color={isInRange ? 'success.main' : 'error.main'}>
-                        {isInRange ? '✓ Within check-in range' : '✗ Outside check-in range'}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Distance: <strong>{distDisplay}</strong> from office (radius: {radius}m)
-                      </Typography>
+                      {/* Your Location */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <MyLocation sx={{ fontSize: 18, color: location ? 'primary.main' : 'grey.400' }} />
+                        <Typography variant="body2" fontWeight={600}>
+                          {location ? 'Your Location (Live)' : 'Getting your location...'}
+                        </Typography>
+                        {location && (
+                          <Chip
+                            label={`±${location.accuracy?.toFixed(0) || '?'}m`}
+                            size="small"
+                            color={location.accuracy <= 50 ? 'success' : location.accuracy <= 100 ? 'primary' : 'warning'}
+                            sx={{ fontSize: '0.65rem', height: 20 }}
+                          />
+                        )}
+                      </Box>
+
+                      {location && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, pl: 3.5 }}>
+                          {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+                        </Typography>
+                      )}
+
+                      {/* Office Location */}
+                      {companyLocation && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <Business sx={{ fontSize: 18, color: 'secondary.main' }} />
+                          <Typography variant="caption" color="text.secondary">
+                            Office: {companyLocation.name || 'Office'}
+                          </Typography>
+                        </Box>
+                      )}
+
+                      {/* Distance & Status */}
+                      {distDisplay ? (
+                        <Box sx={{
+                          mt: 1, p: 1, borderRadius: 1.5,
+                          bgcolor: isInRange ? 'rgba(46,125,50,0.08)' : 'rgba(211,47,47,0.08)',
+                          textAlign: 'center'
+                        }}>
+                          <Typography variant="body2" fontWeight={700} color={isInRange ? 'success.main' : 'error.main'}>
+                            {isInRange ? '✓ Within check-in range' : '✗ Outside check-in range'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            <strong>{distDisplay}</strong> from office &bull; Radius: {radius}m
+                          </Typography>
+                        </Box>
+                      ) : !location ? (
+                        <Box sx={{ textAlign: 'center', mt: 1 }}>
+                          <CircularProgress size={16} sx={{ mr: 1 }} />
+                          <Typography variant="caption" color="text.secondary">
+                            Detecting your location...
+                          </Typography>
+                        </Box>
+                      ) : !companyLocation ? (
+                        <Box sx={{ textAlign: 'center', mt: 1 }}>
+                          <Typography variant="caption" color="warning.main">
+                            Office location not set. Contact admin.
+                          </Typography>
+                        </Box>
+                      ) : null}
                     </Box>
                   );
                 })()}
