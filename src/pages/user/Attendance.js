@@ -92,7 +92,23 @@ function Attendance() {
     return () => clearInterval(timer);
   }, []);
 
-  // Don't get location on page load - only when checking in/out
+  // Get user location on page load for live distance display
+  useEffect(() => {
+    if (!user) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setLocation({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          method: 'watch'
+        });
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [user]);
 
   const getBestLocation = async () => {
     setLocationLoading(true);
@@ -389,7 +405,28 @@ function Attendance() {
         }
       } else {
         console.warn('⚠️ No company found with name:', userCompany);
-        setCompanyLocation(null);
+      }
+
+      // Fallback: try branch location if company location not set
+      if (!companyLocation && user.branchId) {
+        try {
+          const branchDoc = await getDoc(doc(db, 'branches', user.branchId));
+          if (branchDoc.exists()) {
+            const branch = branchDoc.data();
+            if (branch.latitude && branch.longitude) {
+              setCompanyLocation({
+                latitude: parseFloat(branch.latitude),
+                longitude: parseFloat(branch.longitude),
+                name: branch.name,
+                address: branch.address
+              });
+              console.log('✅ Using branch location:', branch.name);
+              return;
+            }
+          }
+        } catch (branchErr) {
+          console.warn('Branch location fallback failed:', branchErr);
+        }
       }
     } catch (error) {
       console.error('❌ Error loading company location:', error);
@@ -472,38 +509,17 @@ function Attendance() {
       // Get fresh location for check-in
       console.log('Getting fresh location for check-in...');
       
-      let currentLocation = null;
-      let attempts = 0;
-      const maxAttempts = 2;
-      
-      // Try to get location with multiple attempts
-      while (!currentLocation && attempts < maxAttempts) {
-        attempts++;
-        console.log(`Location attempt ${attempts}/${maxAttempts}`);
-        
-        try {
-          await getBestLocation();
-          // Wait for state to update
-          await new Promise(resolve => setTimeout(resolve, 500));
-          currentLocation = location;
-        } catch (error) {
-          console.warn(`Location attempt ${attempts} failed:`, error);
-          if (attempts < maxAttempts) {
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        }
-      }
-      
-      // If still no location, try a simpler GPS request as fallback
+      // Use live location from watchPosition, or get fresh one
+      let currentLocation = location;
+
       if (!currentLocation) {
-        console.log('Trying fallback GPS location request...');
+        console.log('No live location, getting fresh GPS...');
         try {
           const position = await new Promise((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true, // Use GPS for fallback as well
-              timeout: 10000,
-              maximumAge: 0 // MUST get fresh location, no cache
+              enableHighAccuracy: true,
+              timeout: 15000,
+              maximumAge: 0
             });
           });
 
@@ -511,13 +527,11 @@ function Attendance() {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
             accuracy: position.coords.accuracy,
-            method: 'gps-fallback'
+            method: 'gps-checkin'
           };
-
           setLocation(currentLocation);
-          console.log('Fallback GPS location acquired:', currentLocation);
-        } catch (fallbackError) {
-          console.error('Fallback GPS location failed:', fallbackError);
+        } catch (gpsError) {
+          console.error('GPS location failed:', gpsError);
         }
       }
       
@@ -1032,6 +1046,34 @@ function Attendance() {
                   )}
                 </Box>
                 
+                {/* Live Distance from Office */}
+                {location && companyLocation && (() => {
+                  const dist = calculateDistanceMeters(
+                    location.latitude, location.longitude,
+                    companyLocation.latitude, companyLocation.longitude
+                  );
+                  const radius = user.geofenceRadius || companySettings?.branchGeofenceRadius || companySettings?.geofenceRadius || 200;
+                  const isInRange = dist !== null && dist <= radius;
+                  const distDisplay = dist >= 1000 ? `${(dist / 1000).toFixed(2)} km` : `${Math.round(dist)} m`;
+
+                  return (
+                    <Box sx={{
+                      mb: 2, p: 1.5, borderRadius: 2,
+                      bgcolor: isInRange ? 'success.50' : 'error.50',
+                      border: '1px solid',
+                      borderColor: isInRange ? 'success.200' : 'error.200',
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="body2" fontWeight={700} color={isInRange ? 'success.main' : 'error.main'}>
+                        {isInRange ? '✓ Within check-in range' : '✗ Outside check-in range'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Distance: <strong>{distDisplay}</strong> from office (radius: {radius}m)
+                      </Typography>
+                    </Box>
+                  );
+                })()}
+
                 {/* Enhanced Action Buttons */}
                 <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
                   <Button
