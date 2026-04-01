@@ -373,42 +373,63 @@ function Attendance() {
 
   const loadCompanyLocation = async () => {
     try {
+      // Try multiple ways to find company: by companyId, then by name
+      const userCompanyId = user.companyId;
       const userCompany = user.company || user.originalCompanyName || '';
-      console.log('🔍 Loading company location for:', userCompany);
+      console.log('🔍 Loading company location for:', userCompany, 'companyId:', userCompanyId);
 
-      const q = query(
-        collection(db, 'companies'),
-        where('name', '==', userCompany)
-      );
+      let companyData = null;
 
-      const querySnapshot = await getDocs(q);
-      console.log('📊 Companies found:', querySnapshot.size);
-
-      if (!querySnapshot.empty) {
-        const companyDoc = querySnapshot.docs[0];
-        const companyData = companyDoc.data();
-        console.log('🏢 Company data:', companyData);
-
-        if (companyData.location && companyData.location.latitude && companyData.location.longitude) {
-          const locationData = {
-            latitude: parseFloat(companyData.location.latitude),
-            longitude: parseFloat(companyData.location.longitude),
-            name: companyData.name,
-            address: companyData.address
-          };
-          setCompanyLocation(locationData);
-          console.log('✅ Company location loaded:', locationData);
-        } else {
-          console.warn('⚠️ No location coordinates found in company profile');
-          console.log('💡 Will use location from attendance record as fallback');
-          setCompanyLocation(null);
+      // 1. Try by companyId (most reliable)
+      if (userCompanyId) {
+        const companyDoc = await getDoc(doc(db, 'companies', userCompanyId));
+        if (companyDoc.exists()) {
+          companyData = companyDoc.data();
+          console.log('✅ Found company by ID:', userCompanyId);
         }
-      } else {
-        console.warn('⚠️ No company found with name:', userCompany);
       }
 
-      // Fallback: try branch location if company location not set
-      if (!companyLocation && user.branchId) {
+      // 2. Fallback: query by name
+      if (!companyData && userCompany) {
+        const q = query(collection(db, 'companies'), where('name', '==', userCompany));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          companyData = querySnapshot.docs[0].data();
+          console.log('✅ Found company by name:', userCompany);
+        }
+      }
+
+      // 3. Fallback: get first company (if only 1 company exists)
+      if (!companyData) {
+        const allCompanies = await getDocs(collection(db, 'companies'));
+        if (allCompanies.size === 1) {
+          companyData = allCompanies.docs[0].data();
+          console.log('✅ Using only company:', companyData.name);
+        }
+      }
+
+      if (companyData) {
+        console.log('🏢 Company data:', companyData);
+        // Check location in company profile
+        const loc = companyData.location;
+        if (loc && loc.latitude && loc.longitude) {
+          setCompanyLocation({
+            latitude: parseFloat(loc.latitude),
+            longitude: parseFloat(loc.longitude),
+            name: companyData.name,
+            address: companyData.address
+          });
+          console.log('✅ Company location loaded');
+          return;
+        } else {
+          console.warn('⚠️ No location coordinates in company profile');
+        }
+      } else {
+        console.warn('⚠️ No company found');
+      }
+
+      // Fallback: try branch location
+      if (user.branchId) {
         try {
           const branchDoc = await getDoc(doc(db, 'branches', user.branchId));
           if (branchDoc.exists()) {
