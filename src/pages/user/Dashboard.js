@@ -248,19 +248,22 @@ function UserDashboard() {
       attendanceActivities.sort((a, b) => b.sortDate - a.sortDate);
       activities.push(...attendanceActivities.slice(0, 3));
 
-      // Load recent leaves
+      // Load recent leaves (client-side sort to avoid composite index requirement)
       const leavesQuery = query(
         collection(db, 'leaves'),
-        where('userId', '==', user.uid),
-        orderBy('appliedDate', 'desc'),
-        limit(3)
+        where('userId', '==', user.uid)
       );
-      
+
       const leavesSnapshot = await getDocs(leavesQuery);
-      leavesSnapshot.docs.forEach(doc => {
-        const leave = doc.data();
+      const leaveDocs = leavesSnapshot.docs.map(doc => doc.data());
+      leaveDocs.sort((a, b) => {
+        const aDate = a.appliedDate?.toDate ? a.appliedDate.toDate() : new Date(a.appliedDate);
+        const bDate = b.appliedDate?.toDate ? b.appliedDate.toDate() : new Date(b.appliedDate);
+        return bDate - aDate;
+      });
+      leaveDocs.slice(0, 3).forEach(leave => {
         const appliedDate = leave.appliedDate?.toDate ? leave.appliedDate.toDate() : new Date(leave.appliedDate);
-        
+
         activities.push({
           type: 'leave',
           action: `Leave ${leave.status === 'approved' ? 'Approved' : leave.status === 'rejected' ? 'Rejected' : 'Submitted'}`,
@@ -271,17 +274,20 @@ function UserDashboard() {
         });
       });
 
-      // Load recent claims
+      // Load recent claims (client-side sort to avoid composite index requirement)
       const claimsQuery = query(
         collection(db, 'claims'),
-        where('userId', '==', user.uid),
-        orderBy('submittedDate', 'desc'),
-        limit(3)
+        where('userId', '==', user.uid)
       );
-      
+
       const claimsSnapshot = await getDocs(claimsQuery);
-      claimsSnapshot.docs.forEach(doc => {
-        const claim = doc.data();
+      const claimDocs = claimsSnapshot.docs.map(doc => doc.data());
+      claimDocs.sort((a, b) => {
+        const aDate = a.submittedDate?.toDate ? a.submittedDate.toDate() : new Date(a.submittedDate);
+        const bDate = b.submittedDate?.toDate ? b.submittedDate.toDate() : new Date(b.submittedDate);
+        return bDate - aDate;
+      });
+      claimDocs.slice(0, 3).forEach(claim => {
         const submittedDate = claim.submittedDate?.toDate ? claim.submittedDate.toDate() : new Date(claim.submittedDate);
         
         activities.push({
@@ -375,7 +381,7 @@ function UserDashboard() {
         userId: user.uid,
         userName: `${user.firstName} ${user.lastName}`,
         userEmail: user.email,
-        company: user.originalCompanyName || user.company || 'RUBIX',
+        company: user.originalCompanyName || user.company || '',
         department: user.department || 'General',
         location: location,
         notes: ''
@@ -436,7 +442,7 @@ function UserDashboard() {
 
   const loadCompanySettings = async () => {
     try {
-      const userCompany = user.company || user.originalCompanyName || 'RUBIX';
+      const userCompany = user.company || user.originalCompanyName || '';
       console.log('🏢 Dashboard - Loading company settings for:', userCompany);
       console.log('🔍 Dashboard - User object:', { company: user.company, originalCompanyName: user.originalCompanyName });
       
@@ -704,7 +710,7 @@ function UserDashboard() {
         userId: user.uid,
         userEmail: user.email,
         role: user.role,
-        company: user.originalCompanyName || user.company || 'RUBIX',
+        company: user.originalCompanyName || user.company || '',
         timestamp: serverTimestamp(),
         status: 'new'
       });

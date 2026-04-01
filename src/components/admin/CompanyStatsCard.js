@@ -24,7 +24,7 @@ import { Business } from '@mui/icons-material';
 function CompanyStatsCard({ data = [], title = "Companies" }) {
   // Helper function to get company consistently (same as Employees.js)
   const getItemCompany = (item) => {
-    return item.company || item.originalCompanyName || 'RUBIX';
+    return item.company || item.originalCompanyName || '';
   };
 
   // Calculate company stats from data

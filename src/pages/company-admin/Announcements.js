@@ -89,7 +89,7 @@ function CompanyAdminAnnouncements() {
       });
       
       // Initialize form with company admin's company
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       setForm(prev => ({
         ...prev,
         company: userCompany
@@ -103,7 +103,7 @@ function CompanyAdminAnnouncements() {
   const loadAnnouncements = async () => {
     setLoading(true);
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       console.log('🔍 Company Admin loading announcements for company:', userCompany);
       
       // Load announcements for this company admin's company only
@@ -139,7 +139,7 @@ function CompanyAdminAnnouncements() {
 
   const loadAvailableDepartments = async () => {
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       console.log('🔍 Company Admin loading departments for company:', userCompany);
       
       // Load all users from the same company to get unique departments
@@ -149,7 +149,7 @@ function CompanyAdminAnnouncements() {
       
       usersSnapshot.docs.forEach(doc => {
         const userData = doc.data();
-        const userCompanyName = userData.originalCompanyName || userData.company || 'RUBIX';
+        const userCompanyName = userData.originalCompanyName || userData.company || '';
         
         // Only include departments from the same company
         if (userCompanyName.toUpperCase() === userCompany.toUpperCase() && userData.department) {
@@ -171,7 +171,7 @@ function CompanyAdminAnnouncements() {
 
   const createNotificationsForAnnouncement = async (announcement, announcementId) => {
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       
       // Query users based on announcement visibility within the company
       let usersQuery;
@@ -193,7 +193,7 @@ function CompanyAdminAnnouncements() {
 
         // Filter based on visibility - always within the same company
         let shouldNotify = false;
-        const userCompanyName = userData.originalCompanyName || userData.company || 'RUBIX';
+        const userCompanyName = userData.originalCompanyName || userData.company || '';
         
         // Only notify users from the same company
         if (userCompanyName.toUpperCase() === userCompany.toUpperCase()) {
@@ -252,7 +252,7 @@ function CompanyAdminAnnouncements() {
     }
 
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       
       const newAnnouncement = {
         title: form.title.trim(),
@@ -301,7 +301,7 @@ function CompanyAdminAnnouncements() {
     }
 
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       
       const updateData = {
         title: form.title.trim(),
@@ -349,7 +349,7 @@ function CompanyAdminAnnouncements() {
   };
 
   const resetForm = () => {
-    const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+    const userCompany = user.originalCompanyName || user.company || '';
     setForm({
       title: '',
       content: '',

@@ -111,7 +111,7 @@ function CompanyAdminProfile() {
         fullUserObject: user
       });
       
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       setForm(prev => ({
         ...prev,
         name: userCompany
@@ -124,7 +124,7 @@ function CompanyAdminProfile() {
   const loadCompanyProfile = async () => {
     setLoading(true);
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       console.log('🔍 Company Admin loading profile for company:', userCompany);
       
       // Load profile for this specific company only
@@ -163,7 +163,7 @@ function CompanyAdminProfile() {
 
     setSaving(true);
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       
       const newProfile = {
         ...form,
@@ -198,7 +198,7 @@ function CompanyAdminProfile() {
 
     setSaving(true);
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       
       const profileRef = doc(db, 'companies', companyProfile.id);
       await updateDoc(profileRef, {
@@ -262,7 +262,7 @@ function CompanyAdminProfile() {
   };
 
   const handleCreate = () => {
-    const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+    const userCompany = user.originalCompanyName || user.company || '';
     setForm(prev => ({
       ...prev,
       name: userCompany

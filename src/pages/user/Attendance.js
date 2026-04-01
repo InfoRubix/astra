@@ -43,7 +43,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { format, differenceInHours, differenceInMinutes } from 'date-fns';
-import { collection, addDoc, query, where, orderBy, limit, getDocs, doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, limit, getDocs, getDoc, doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { attendanceService } from '../../services/attendanceService';
 import { pushNotificationService } from '../../services/pushNotificationService';
@@ -52,7 +52,7 @@ import AttendanceMap from '../../components/AttendanceMap';
 import { GoogleMap, Marker, Circle, useLoadScript } from '@react-google-maps/api';
 import { getRawCheckIn, getRawCheckOut, getCheckInTime, getCheckOutTime, isCurrentlyCheckedIn, isRecordCorrupted as checkRecordCorrupted, formatTimeHHMM } from '../../utils/attendanceHelpers';
 
-const libraries = ['places'];
+const libraries = ['places', 'geometry'];
 
 function Attendance() {
   const { user } = useAuth();
@@ -294,7 +294,7 @@ function Attendance() {
 
   const loadCompanySettings = async () => {
     try {
-      const userCompany = user.company || user.originalCompanyName || 'RUBIX';
+      const userCompany = user.company || user.originalCompanyName || '';
       console.log('🏢 Loading company settings for:', userCompany);
       console.log('🔍 User object:', { company: user.company, originalCompanyName: user.originalCompanyName });
       
@@ -310,9 +310,20 @@ function Attendance() {
       if (!querySnapshot.empty) {
         const settingsDoc = querySnapshot.docs[0];
         const settings = { id: settingsDoc.id, ...settingsDoc.data() };
+        // Also load branch-level geofence radius if user has branchId
+        if (user.branchId) {
+          try {
+            const branchDoc = await getDoc(doc(db, 'branches', user.branchId));
+            if (branchDoc.exists() && branchDoc.data().geofenceRadius) {
+              settings.branchGeofenceRadius = branchDoc.data().geofenceRadius;
+            }
+          } catch (branchErr) {
+            console.warn('Could not load branch geofence:', branchErr);
+          }
+        }
+
         setCompanySettings(settings);
         console.log('✅ Company settings loaded:', settings);
-        console.log('🕘 Work start time from DB:', settings.workStartTime);
       } else {
         console.warn('⚠️ No company settings found for:', userCompany);
         // Set default settings if none found
@@ -323,6 +334,7 @@ function Attendance() {
           lunchEndTime: '13:00',
           allowFlexibleHours: false,
           flexibleHoursWindow: 0,
+          geofenceRadius: 200,
           workDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
         });
         console.log('📝 Using default settings with 09:00 start time');
@@ -337,6 +349,7 @@ function Attendance() {
         lunchEndTime: '13:00',
         allowFlexibleHours: false,
         flexibleHoursWindow: 0,
+        geofenceRadius: 200,
         workDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
       });
     }
@@ -344,7 +357,7 @@ function Attendance() {
 
   const loadCompanyLocation = async () => {
     try {
-      const userCompany = user.company || user.originalCompanyName || 'RUBIX';
+      const userCompany = user.company || user.originalCompanyName || '';
       console.log('🔍 Loading company location for:', userCompany);
 
       const q = query(
@@ -385,33 +398,26 @@ function Attendance() {
   };
 
 
-  // Calculate distance between two coordinates using Haversine formula
-  const calculateDistance = (lat1, lng1, lat2, lng2) => {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLng / 2) * Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-    return distance; // Returns distance in kilometers
+  // Calculate distance using Google Maps Geometry library (returns meters)
+  const calculateDistanceMeters = (lat1, lng1, lat2, lng2) => {
+    if (!window.google?.maps?.geometry) return null;
+    const from = new window.google.maps.LatLng(lat1, lng1);
+    const to = new window.google.maps.LatLng(lat2, lng2);
+    return window.google.maps.geometry.spherical.computeDistanceBetween(from, to);
   };
 
-  // Get distance from company office
+  // Get distance from company office (in meters)
   const getDistanceFromOffice = () => {
     if (!location || !companyLocation) {
       return null;
     }
-    
-    const distance = calculateDistance(
+
+    return calculateDistanceMeters(
       location.latitude,
       location.longitude,
       companyLocation.latitude,
       companyLocation.longitude
     );
-    
-    return distance;
   };
 
   // Get location quality assessment
@@ -521,22 +527,36 @@ function Attendance() {
         return;
       }
 
-      // Calculate distance from office using current location
-      const distanceFromOffice = companyLocation ? calculateDistance(
+      // Calculate distance from office using Google Maps Geometry (in meters)
+      const distanceMeters = companyLocation ? calculateDistanceMeters(
         currentLocation.latitude,
         currentLocation.longitude,
         companyLocation.latitude,
         companyLocation.longitude
       ) : null;
-      
+
+      // Enforce geofence - priority: staff override > branch > company > default (200m)
+      const geofenceRadius = user.geofenceRadius
+        || companySettings?.branchGeofenceRadius
+        || companySettings?.geofenceRadius
+        || 200;
+      if (distanceMeters !== null && distanceMeters > geofenceRadius) {
+        const distanceDisplay = distanceMeters >= 1000
+          ? `${(distanceMeters / 1000).toFixed(2)} km`
+          : `${Math.round(distanceMeters)} m`;
+        setError(`You are ${distanceDisplay} from the office. Check-in is only allowed within ${geofenceRadius}m radius.`);
+        setLoading(false);
+        return;
+      }
+
       const attendanceData = {
         userId: user.uid,
         userName: `${user.firstName} ${user.lastName}`,
         userEmail: user.email,
-        company: user.originalCompanyName || user.company || 'RUBIX',
+        company: user.originalCompanyName || user.company || '',
         department: user.department || 'General',
         location: currentLocation,
-        distanceFromOffice: distanceFromOffice,
+        distanceFromOffice: distanceMeters,
         companyLocation: companyLocation,
         locationQuality: getLocationQuality(currentLocation.accuracy),
         locationReliable: isLocationReliable(currentLocation.accuracy),
@@ -1194,11 +1214,11 @@ function Attendance() {
                           {/* Distance - only show if reliable */}
                           {storedDistance && reliable ? (
                             <Typography variant="body2" color="primary.main" sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
-                              Distance from office: {storedDistance.toFixed(2)} km
+                              Distance from office: {storedDistance >= 1000 ? `${(storedDistance / 1000).toFixed(2)} km` : `${Math.round(storedDistance)} m`}
                             </Typography>
                           ) : storedDistance && !reliable ? (
                             <Typography variant="body2" color="warning.main" sx={{ fontSize: '0.875rem', fontWeight: 600 }}>
-                              Distance: ~{storedDistance.toFixed(2)} km (approximate due to poor GPS)
+                              Distance: ~{storedDistance >= 1000 ? `${(storedDistance / 1000).toFixed(2)} km` : `${Math.round(storedDistance)} m`} (approximate due to poor GPS)
                             </Typography>
                           ) : null}
                         </>
@@ -1349,7 +1369,7 @@ function Attendance() {
                           lat: companyLocation.latitude,
                           lng: companyLocation.longitude
                         }}
-                        radius={companySettings?.checkInRadius || 80}
+                        radius={user.geofenceRadius || companySettings?.branchGeofenceRadius || companySettings?.geofenceRadius || 200}
                         options={{
                           fillColor: '#4285F4',
                           fillOpacity: 0.2,
@@ -1418,7 +1438,7 @@ function Attendance() {
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <Box sx={{ width: 12, height: 12, bgcolor: 'rgba(66,133,244,0.15)', borderRadius: '50%', mr: 0.5, border: '2px solid rgba(66,133,244,0.6)' }} />
                       <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-                        Radius ({companySettings?.checkInRadius || 80}m)
+                        Radius ({user.geofenceRadius || companySettings?.branchGeofenceRadius || companySettings?.geofenceRadius || 200}m)
                       </Typography>
                     </Box>
                   </Box>
@@ -1457,7 +1477,7 @@ function Attendance() {
                     )}
                     <Divider sx={{ my: 1 }} />
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      Company: {user.company || user.originalCompanyName || 'RUBIX'}
+                      Company: {user.company || user.originalCompanyName || ''}
                     </Typography>
                     {companyLocation && (
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>

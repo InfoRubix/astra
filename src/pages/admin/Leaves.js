@@ -114,32 +114,68 @@ function AdminLeaves() {
   const leavesPerPage = 4;
   const [publicHolidays, setPublicHolidays] = useState([]);
   const [holidaysLoading, setHolidaysLoading] = useState(false);
+  const [holidayYear, setHolidayYear] = useState(new Date().getFullYear());
 
-  // Default Malaysia Public Holidays 2025
-  const getDefaultMalaysianHolidays = () => [
-    { date: '2025-01-01', name: 'New Year\'s Day', type: 'National' },
-    { date: '2025-01-29', name: 'Chinese New Year', type: 'National' },
-    { date: '2025-01-30', name: 'Chinese New Year (2nd Day)', type: 'National' },
-    { date: '2025-03-31', name: 'Hari Raya Puasa', type: 'National' },
-    { date: '2025-04-01', name: 'Hari Raya Puasa (2nd Day)', type: 'National' },
-    { date: '2025-05-01', name: 'Labour Day', type: 'National' },
-    { date: '2025-05-12', name: 'Wesak Day', type: 'National' },
-    { date: '2025-06-06', name: 'Yang di-Pertuan Agong\'s Birthday', type: 'National' },
-    { date: '2025-06-07', name: 'Hari Raya Haji', type: 'National' },
-    { date: '2025-08-31', name: 'Merdeka Day', type: 'National' },
-    { date: '2025-09-16', name: 'Malaysia Day', type: 'National' },
-    { date: '2025-10-20', name: 'Deepavali', type: 'National' },
-    { date: '2025-12-25', name: 'Christmas Day', type: 'National' },
-    // State holidays (commonly observed)
-    { date: '2025-02-01', name: 'Federal Territory Day', type: 'State' },
-    { date: '2025-03-11', name: 'Sultan of Selangor\'s Birthday', type: 'State' },
-    { date: '2025-07-07', name: 'George Town World Heritage City Day', type: 'State' },
-    { date: '2025-10-24', name: 'Sultan of Pahang\'s Birthday', type: 'State' }
-  ];
+  // Fetch Malaysia Public Holidays dynamically for selected year
+  const getDefaultMalaysianHolidays = async (year = holidayYear) => {
+    try {
+      const { holidayService } = await import('../../services/holidayService');
+      const result = await holidayService.getMalaysiaHolidays(year);
+      if (result.success && result.data.length > 0) {
+        return result.data.map(h => ({
+          date: h.date instanceof Date ? h.date.toISOString().split('T')[0] : h.date,
+          name: h.name || h.localName,
+          type: h.global !== false ? 'National' : 'State'
+        }));
+      }
+    } catch (err) {
+      console.warn('Holiday fetch failed:', err);
+    }
+    return [];
+  };
+
+  // Force fetch from Calendarific API and save to Firestore
+  const fetchHolidaysFromAPI = async (year = holidayYear) => {
+    setHolidaysLoading(true);
+    setError('');
+    try {
+      const { holidayService } = await import('../../services/holidayService');
+      const result = await holidayService.refreshHolidays(year);
+      if (result.success && result.data.length > 0) {
+        const formatted = result.data.map(h => ({
+          date: h.date instanceof Date ? h.date.toISOString().split('T')[0] : String(h.date).split('T')[0],
+          name: h.name || h.localName,
+          type: h.global ? 'National' : 'State',
+          locations: h.locations || 'All'
+        }));
+        // Merge with custom holidays
+        const customHolidays = await loadCustomHolidays();
+        const allHolidays = [...customHolidays, ...formatted];
+        const unique = allHolidays.reduce((acc, h) => {
+          if (!acc.find(x => x.date === h.date)) acc.push(h);
+          return acc;
+        }, []);
+        unique.sort((a, b) => new Date(a.date) - new Date(b.date));
+        setPublicHolidays(unique);
+        setSuccess(`Fetched ${formatted.length} holidays for ${year} from Calendarific API and saved to database.`);
+        setTimeout(() => setSuccess(''), 5000);
+      } else {
+        setError(`No holidays found for ${year}. API may not have data for this year yet.`);
+      }
+    } catch (err) {
+      console.error('Force fetch holidays error:', err);
+      if (err.message && err.message.includes('CALENDARIFIC_API_KEY')) {
+        setError('API Key not configured. Please add REACT_APP_CALENDARIFIC_API_KEY to .env and restart the app (npm start).');
+      } else {
+        setError('Failed to fetch holidays: ' + err.message);
+      }
+    }
+    setHolidaysLoading(false);
+  };
 
   // Get user's company (supporting legacy fields during transition)
   const getUserCompany = () => {
-    return user.originalCompanyName || user.company || 'RUBIX';
+    return user.originalCompanyName || user.company || '';
   };
 
   useEffect(() => {
@@ -266,7 +302,7 @@ function AdminLeaves() {
   const loadAllHolidays = async () => {
     setHolidaysLoading(true);
     try {
-      const defaultHolidays = getDefaultMalaysianHolidays();
+      const defaultHolidays = await getDefaultMalaysianHolidays();
       const customHolidays = await loadCustomHolidays();
       
       console.log('🎄 Default holidays:', defaultHolidays.length);
@@ -299,7 +335,7 @@ function AdminLeaves() {
       console.error('Error loading holidays:', error);
       setError('Failed to load holidays: ' + error.message);
       // Fallback to default holidays
-      setPublicHolidays(getDefaultMalaysianHolidays());
+      getDefaultMalaysianHolidays().then(h => setPublicHolidays(h));
     }
     setHolidaysLoading(false);
   };
@@ -481,7 +517,7 @@ function AdminLeaves() {
         employeeId: selectedEmployee.id,
         employeeName: `${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
         employeeEmail: selectedEmployee.email,
-        company: selectedEmployee.company || selectedEmployee.originalCompanyName || 'RUBIX',
+        company: selectedEmployee.company || selectedEmployee.originalCompanyName || '',
         updatedAt: serverTimestamp(),
         updatedBy: user.uid
       };
@@ -640,7 +676,7 @@ function AdminLeaves() {
           employeeId: employee.id,
           employeeName: `${employee.firstName} ${employee.lastName}`,
           employeeEmail: employee.email,
-          company: employee.company || employee.originalCompanyName || 'RUBIX',
+          company: employee.company || employee.originalCompanyName || '',
           createdAt: serverTimestamp(),
           createdBy: user.uid,
           createdByName: `${user.firstName} ${user.lastName}`,
@@ -714,7 +750,7 @@ function AdminLeaves() {
           employeeId: employee.id,
           employeeName: `${employee.firstName} ${employee.lastName}`,
           employeeEmail: employee.email,
-          company: employee.company || employee.originalCompanyName || 'RUBIX',
+          company: employee.company || employee.originalCompanyName || '',
           updatedAt: serverTimestamp(),
           updatedBy: user.uid,
           updatedByName: `${user.firstName} ${user.lastName}`,
@@ -864,7 +900,7 @@ function AdminLeaves() {
     try {
       const columns = [
         { key: 'userName', header: 'Employee', width: 1.5 },
-        { key: 'originalCompanyName', header: 'Company', width: 1.2, formatter: (row) => row.originalCompanyName || row.company || 'RUBIX' },
+        { key: 'originalCompanyName', header: 'Company', width: 1.2, formatter: (row) => row.originalCompanyName || row.company || '' },
         { key: 'department', header: 'Department', width: 1.2 },
         { key: 'leaveType', header: 'Leave Type', width: 1.2, formatter: (row) => getLeaveTypeLabel(row.leaveType) },
         { key: 'startDate', header: 'Start Date', width: 1.2, formatter: (row) => {
@@ -1983,12 +2019,48 @@ function AdminLeaves() {
                         </Grid>
                       </Box>
 
+                      {/* Fetch Holidays from API */}
+                      <Paper sx={{ mt: 3, p: 2, border: '1px solid', borderColor: 'primary.200', borderRadius: 2, bgcolor: 'primary.50' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                          <EventAvailable color="primary" />
+                          <Typography variant="subtitle2" fontWeight={700} color="primary.main">
+                            Fetch Public Holidays
+                          </Typography>
+                          <TextField
+                            select
+                            size="small"
+                            value={holidayYear}
+                            onChange={(e) => setHolidayYear(Number(e.target.value))}
+                            SelectProps={{ native: true }}
+                            sx={{ width: 100 }}
+                          >
+                            {[...Array(5)].map((_, i) => {
+                              const y = new Date().getFullYear() - 1 + i;
+                              return <option key={y} value={y}>{y}</option>;
+                            })}
+                          </TextField>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => fetchHolidaysFromAPI(holidayYear)}
+                            disabled={holidaysLoading}
+                            startIcon={holidaysLoading ? <CircularProgress size={16} color="inherit" /> : <EventAvailable />}
+                            sx={{ borderRadius: 2 }}
+                          >
+                            {holidaysLoading ? 'Fetching...' : `Fetch ${holidayYear} Holidays`}
+                          </Button>
+                          <Typography variant="caption" color="text.secondary">
+                            Fetches from Calendarific API and saves to database
+                          </Typography>
+                        </Box>
+                      </Paper>
+
                       {/* Malaysia Holidays List */}
-                      <Accordion sx={{ mt: 3 }}>
+                      <Accordion sx={{ mt: 2 }}>
                         <AccordionSummary expandIcon={<ExpandMore />}>
                           <Typography variant="subtitle1" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
                             <EventAvailable sx={{ mr: 1, color: 'error.main' }} />
-                            Malaysia Public Holidays 2025 ({publicHolidays.length} holidays)
+                            Malaysia Public Holidays {holidayYear} ({publicHolidays.length} holidays)
                           </Typography>
                         </AccordionSummary>
                         <AccordionDetails>
@@ -2006,8 +2078,8 @@ function AdminLeaves() {
                                   National Holidays ({publicHolidays.filter(h => h.type === 'National').length})
                                 </Typography>
                                 <Box sx={{ maxHeight: 300, overflowY: 'auto' }}>
-                                  {publicHolidays.filter(h => h.type === 'National').map((holiday, index) => (
-                                    <Box key={index} sx={{ 
+                                  {publicHolidays.filter(h => h.type === 'National').map((holiday) => (
+                                    <Box key={`${holiday.date}-${holiday.name}`} sx={{
                                       display: 'flex', 
                                       alignItems: 'center', 
                                       justifyContent: 'space-between',
@@ -2050,8 +2122,8 @@ function AdminLeaves() {
                                   State Holidays ({publicHolidays.filter(h => h.type === 'State').length})
                                 </Typography>
                                 <Box sx={{ maxHeight: 300, overflowY: 'auto' }}>
-                                  {publicHolidays.filter(h => h.type === 'State').map((holiday, index) => (
-                                    <Box key={index} sx={{ 
+                                  {publicHolidays.filter(h => h.type === 'State').map((holiday) => (
+                                    <Box key={`${holiday.date}-${holiday.name}`} sx={{
                                       display: 'flex', 
                                       alignItems: 'center', 
                                       justifyContent: 'space-between',
@@ -2134,7 +2206,7 @@ function AdminLeaves() {
                       
                       <TableCell>
                         <Chip 
-                          label={employee.company || employee.originalCompanyName || 'RUBIX'}
+                          label={employee.company || employee.originalCompanyName || ''}
                           color="primary"
                           variant="outlined"
                           size="small"
@@ -2325,7 +2397,7 @@ function AdminLeaves() {
 
                       <TableCell>
                         <Chip
-                          label={employee.company || employee.originalCompanyName || 'RUBIX'}
+                          label={employee.company || employee.originalCompanyName || ''}
                           size="small"
                           variant="outlined"
                         />
@@ -2689,7 +2761,7 @@ function AdminLeaves() {
                                 {employee.department || 'General'} • {employee.email}
                               </Typography>
                               <Chip 
-                                label={employee.company || employee.originalCompanyName || 'RUBIX'}
+                                label={employee.company || employee.originalCompanyName || ''}
                                 color="primary"
                                 variant="outlined"
                                 size="small"
@@ -3061,7 +3133,7 @@ function AdminLeaves() {
                                     {employee.department || 'General'}
                                   </Typography>
                                   <Chip
-                                    label={employee.company || employee.originalCompanyName || 'RUBIX'}
+                                    label={employee.company || employee.originalCompanyName || ''}
                                     color="primary"
                                     variant="outlined"
                                     size="small"
@@ -3645,7 +3717,7 @@ function AdminLeaves() {
                   <strong>Department:</strong> {selectedEmployee.department || 'General'}
                 </Typography>
                 <Typography variant="body2">
-                  <strong>Company:</strong> {selectedEmployee.company || selectedEmployee.originalCompanyName || 'RUBIX'}
+                  <strong>Company:</strong> {selectedEmployee.company || selectedEmployee.originalCompanyName || ''}
                 </Typography>
               </Box>
               
@@ -3915,7 +3987,7 @@ function AdminLeaves() {
                               {employee.firstName} {employee.lastName}
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {employee.email} • {employee.company || employee.originalCompanyName || 'RUBIX'}
+                              {employee.email} • {employee.company || employee.originalCompanyName || ''}
                             </Typography>
                           </Box>
                           {hasQuota && (

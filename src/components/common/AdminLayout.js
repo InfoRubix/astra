@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Fragment } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { 
   Box, 
   AppBar, 
@@ -42,6 +42,7 @@ import {
   AccessTime,
   Business,
   Settings,
+  MyLocation,
   PersonAdd,
   ExpandLess,
   ExpandMore,
@@ -238,7 +239,8 @@ function AdminLayout() {
       key: 'companyManagement',
       items: [
         { text: 'Company Profile', icon: <Business />, path: '/admin/company-profile' },
-        { text: 'Company Settings', icon: <Settings />, path: '/admin/company-settings' }
+        { text: 'Company Settings', icon: <Settings />, path: '/admin/company-settings' },
+        { text: 'Geofence Settings', icon: <MyLocation />, path: '/admin/geofence-settings' }
       ]
     },
     {
@@ -474,7 +476,7 @@ function AdminLayout() {
       console.log('🧪 Creating test admin notification...');
       
       const testNotification = {
-        originalCompanyName: user.originalCompanyName || user.company || 'RUBIX',
+        originalCompanyName: user.originalCompanyName || user.company || '',
         isAdminNotification: true,
         type: 'pending_approval',
         title: 'Test Leave Request Requires Approval',
@@ -629,7 +631,7 @@ function AdminLayout() {
                   textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
                   display: 'block'
                 }}>
-                  by RUBIX TECHNOLOGY
+                  by ASTRA
                 </Typography>
               </Box>
             )}
@@ -945,6 +947,11 @@ function AdminLayout() {
     </Box>
   );
 
+  // Role guard - redirect if not admin
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <Box sx={{ display: 'flex' }}>
       {/* App Bar */}
@@ -1245,7 +1252,7 @@ function AdminLayout() {
                       display: 'block',
                       lineHeight: 1.2
                     }}>
-                      by RUBIX TECHNOLOGY
+                      by ASTRA
                     </Typography>
                   </Box>
                 </Box>

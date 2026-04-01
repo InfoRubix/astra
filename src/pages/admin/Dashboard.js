@@ -230,7 +230,7 @@ function AdminDashboard() {
     console.log('🚀 STARTING loadDashboardData function...');
     try {
       // Use user's actual company (supporting legacy fields during transition)
-      const companyName = user.originalCompanyName || user.company || 'RUBIX';
+      const companyName = user.originalCompanyName || user.company || '';
       console.log('👤 Admin user company:', companyName);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -280,7 +280,7 @@ function AdminDashboard() {
       const pendingLeaves = pendingLeavesSnapshot.docs.map(doc => ({
         type: 'leave',
         employee: doc.data().userName,
-        company: doc.data().company || doc.data().originalCompanyName || 'RUBIX',
+        company: doc.data().company || doc.data().originalCompanyName || '',
         request: `${doc.data().leaveType} Leave - ${doc.data().totalDays} days`,
         date: `${format(doc.data().startDate?.toDate ? doc.data().startDate.toDate() : new Date(doc.data().startDate), 'dd/MM/yyyy')} to ${format(doc.data().endDate?.toDate ? doc.data().endDate.toDate() : new Date(doc.data().endDate), 'dd/MM/yyyy')}`,
         avatar: doc.data().userName ? doc.data().userName.split(' ').map(n => n[0]).join('') : 'U'
@@ -322,7 +322,7 @@ function AdminDashboard() {
 
         // Handle both old format (checkInTime) and new format (clockInTime)
         const checkInTime = getRawCheckIn(attendance);
-        const company = attendance.company || attendance.originalCompanyName || 'RUBIX';
+        const company = attendance.company || attendance.originalCompanyName || '';
 
         if (checkInTime) {
           const clockInTime = checkInTime.toDate ? checkInTime.toDate() : new Date(checkInTime);
@@ -378,7 +378,7 @@ function AdminDashboard() {
       // Count employees by company for pie chart
       allUsers.forEach(user => {
         if (user.role !== 'admin') { // Exclude admins from company stats
-          const company = user.originalCompanyName || user.company || 'RUBIX';
+          const company = user.originalCompanyName || user.company || '';
           companyEmployeeCount[company] = (companyEmployeeCount[company] || 0) + 1;
         }
       });
@@ -448,7 +448,7 @@ function AdminDashboard() {
     try {
       let success;
       const additionalData = {
-        companyName: user.originalCompanyName || user.company || 'RUBIX',
+        companyName: user.originalCompanyName || user.company || '',
         generatedBy: `${user.firstName} ${user.lastName}`
       };
 

@@ -21,6 +21,7 @@ export const useCompanyDashboard = (company) => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
   useEffect(() => {
     if (!company) {
@@ -174,7 +175,7 @@ export const useCompanyDashboard = (company) => {
       unsubscribeClaims();
       unsubscribeBranches();
     };
-  }, [company]);
+  }, [company, refetchTrigger]);
 
   return {
     dashboardData,
@@ -182,8 +183,7 @@ export const useCompanyDashboard = (company) => {
     error,
     refetch: () => {
       if (company) {
-        setLoading(true);
-        // Trigger re-fetch by updating a dependency
+        setRefetchTrigger(prev => prev + 1);
       }
     }
   };

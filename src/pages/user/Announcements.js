@@ -77,16 +77,16 @@ function UserAnnouncements() {
       
       // Helper function to get company consistently (same pattern as other components)
       const getUserCompany = () => {
-        return user.originalCompanyName || user.company || 'RUBIX';
+        return user.originalCompanyName || user.company || '';
       };
       
       const getAnnouncementCompany = (announcement) => {
-        return announcement.company || announcement.originalCompanyName || 'RUBIX';
+        return announcement.company || announcement.originalCompanyName || '';
       };
       
       // Normalize company names for comparison (handle case sensitivity and whitespace)
       const normalizeCompany = (companyName) => {
-        return companyName ? companyName.toString().trim().toUpperCase() : 'RUBIX';
+        return companyName ? companyName.toString().trim().toUpperCase() : '';
       };
 
       const querySnapshot = await getDocs(q);

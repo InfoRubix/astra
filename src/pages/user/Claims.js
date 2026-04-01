@@ -448,7 +448,7 @@ function UserClaims() {
       })));
 
       // Debug: Check what company value we're using
-      const resolvedCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const resolvedCompany = user.originalCompanyName || user.company || '';
       console.log('🔍 Creating claim with company data:', {
         userOriginalCompanyName: user.originalCompanyName,
         userCompany: user.company,
@@ -517,7 +517,7 @@ function UserClaims() {
       try {
         // Create notification for admins about new claim
         const adminNotification = {
-          originalCompanyName: user.originalCompanyName || user.company || 'RUBIX',
+          originalCompanyName: user.originalCompanyName || user.company || '',
           isAdminNotification: true, // Flag to identify admin notifications
           type: 'pending_approval',
           title: 'New Claim Requires Approval',
@@ -654,28 +654,9 @@ function UserClaims() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Get branch name helper function
+  // Get branch name from user data
   const getBranchName = () => {
-    if (user?.branch) return user.branch;
-    
-    const branchMappings = {
-      'rubix-kl': 'KL Main Branch',
-      'rubix-johor': 'Johor Branch',
-      'rubix-penang': 'Penang Branch',
-      'afc-kl': 'KL Branch',
-      'afc-penang': 'Penang Branch',
-      'afc-ipoh': 'Ipoh Branch',
-      'kfc-kl': 'KL Branch',
-      'kfc-sabah': 'Sabah Branch',
-      'kfc-sarawak': 'Sarawak Branch',
-      'asiahahisam-kl': 'KL Branch',
-      'asiahahisam-shahalam': 'Shah Alam Branch',
-      'litigation-kl': 'KL Branch',
-      'litigation-ipoh': 'Ipoh Branch',
-      'litigation-johor': 'Johor Branch'
-    };
-    
-    return branchMappings[user?.branchId] || user?.branchName || 'Main Branch';
+    return user?.branchName || user?.branch || 'Branch';
   };
 
   // Mileage calculation function

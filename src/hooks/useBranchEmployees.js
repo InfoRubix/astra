@@ -13,28 +13,9 @@ export const useBranchEmployees = (user) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Get branch name helper
+  // Get branch name from user data
   const getBranchName = () => {
-    if (user?.branch) return user.branch;
-    
-    const branchMappings = {
-      'rubix-kl': 'KL Main Branch',
-      'rubix-johor': 'Johor Branch',
-      'rubix-penang': 'Penang Branch',
-      'afc-kl': 'KL Branch',
-      'afc-penang': 'Penang Branch',
-      'afc-ipoh': 'Ipoh Branch',
-      'kfc-kl': 'KL Branch',
-      'kfc-sabah': 'Sabah Branch',
-      'kfc-sarawak': 'Sarawak Branch',
-      'asiahahisam-kl': 'KL Branch',
-      'asiahahisam-shahalam': 'Shah Alam Branch',
-      'litigation-kl': 'KL Branch',
-      'litigation-ipoh': 'Ipoh Branch',
-      'litigation-johor': 'Johor Branch'
-    };
-    
-    return branchMappings[user?.branchId] || 'Branch';
+    return user?.branchName || user?.branch || 'Branch';
   };
 
   useEffect(() => {

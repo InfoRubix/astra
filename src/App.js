@@ -39,6 +39,7 @@ import AdminCompanyPerformance from './pages/admin/CompanyPerformance';
 import AdminReports from './pages/admin/Reports';
 import AdminForgottenCheckouts from './pages/admin/ForgottenCheckouts';
 import AdminPositionManagement from './pages/admin/PositionManagement';
+import AdminGeofenceSettings from './pages/admin/GeofenceSettings';
 
 // Company Admin Pages
 import CompanyAdminDashboard from './pages/company-admin/Dashboard';
@@ -105,6 +106,7 @@ function App() {
           <Route path="announcements" element={<AdminAnnouncements />} />
           <Route path="payslips" element={<AdminPayslips />} />
           <Route path="company-settings" element={<AdminCompanySettings />} />
+          <Route path="geofence-settings" element={<AdminGeofenceSettings />} />
           <Route path="company-profile" element={<AdminCompanyProfile />} />
           <Route path="performance" element={<AdminPerformance />} />
           <Route path="company-performance" element={<AdminCompanyPerformance />} />

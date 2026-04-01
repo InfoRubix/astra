@@ -1,30 +1,27 @@
-import React, { useState } from 'react';
-import { 
-  Container, 
-  Paper, 
-  TextField, 
-  Button, 
-  Typography, 
+import React, { useState, useEffect } from 'react';
+import {
+  Container,
+  Paper,
+  TextField,
+  Button,
+  Typography,
   Box,
   Alert,
   Link,
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  CircularProgress
 } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-
-const COMPANIES = [
-  'ASIAH HISAM',
-  'RUBIX',
-  'AFC',
-  'KFC',
-  'LITIGATION'
-];
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../../services/firebase';
 
 function Register() {
+  const [companies, setCompanies] = useState([]);
+  const [companiesLoading, setCompaniesLoading] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -40,6 +37,22 @@ function Register() {
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  // Fetch companies from Firestore
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const snap = await getDocs(query(collection(db, 'companies'), where('isActive', '==', true)));
+        const names = snap.docs.map(d => d.data().name).filter(Boolean).sort();
+        setCompanies(names);
+      } catch (err) {
+        console.error('Error loading companies:', err);
+        setCompanies([]);
+      }
+      setCompaniesLoading(false);
+    };
+    fetchCompanies();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -122,11 +135,17 @@ function Register() {
                 onChange={handleChange}
                 label="Company"
               >
-                {COMPANIES.map((company) => (
-                  <MenuItem key={company} value={company}>
-                    {company}
-                  </MenuItem>
-                ))}
+                {companiesLoading ? (
+                  <MenuItem disabled><CircularProgress size={20} sx={{ mr: 1 }} /> Loading...</MenuItem>
+                ) : companies.length === 0 ? (
+                  <MenuItem disabled>No companies available</MenuItem>
+                ) : (
+                  companies.map((company) => (
+                    <MenuItem key={company} value={company}>
+                      {company}
+                    </MenuItem>
+                  ))
+                )}
               </Select>
             </FormControl>
             <TextField

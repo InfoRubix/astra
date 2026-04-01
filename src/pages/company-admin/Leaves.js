@@ -116,30 +116,28 @@ function CompanyAdminLeaves() {
   const [holidaysLoading, setHolidaysLoading] = useState(false);
   const [viewDetailsDialog, setViewDetailsDialog] = useState(false);
 
-  // Default Malaysia Public Holidays 2025
-  const getDefaultMalaysianHolidays = () => [
-    { date: '2025-01-01', name: 'New Year\'s Day', type: 'National' },
-    { date: '2025-01-29', name: 'Chinese New Year', type: 'National' },
-    { date: '2025-01-30', name: 'Chinese New Year (2nd Day)', type: 'National' },
-    { date: '2025-03-31', name: 'Hari Raya Puasa', type: 'National' },
-    { date: '2025-04-01', name: 'Hari Raya Puasa (2nd Day)', type: 'National' },
-    { date: '2025-05-01', name: 'Labour Day', type: 'National' },
-    { date: '2025-05-12', name: 'Wesak Day', type: 'National' },
-    { date: '2025-06-06', name: 'Yang di-Pertuan Agong\'s Birthday', type: 'National' },
-    { date: '2025-06-07', name: 'Hari Raya Haji', type: 'National' },
-    { date: '2025-08-31', name: 'Merdeka Day', type: 'National' },
-    { date: '2025-09-16', name: 'Malaysia Day', type: 'National' },
-    { date: '2025-10-20', name: 'Deepavali', type: 'National' },
-    { date: '2025-12-25', name: 'Christmas Day', type: 'National' },
-    { date: '2025-02-01', name: 'Federal Territory Day', type: 'State' },
-    { date: '2025-03-11', name: 'Sultan of Selangor\'s Birthday', type: 'State' },
-    { date: '2025-07-07', name: 'George Town World Heritage City Day', type: 'State' },
-    { date: '2025-10-24', name: 'Sultan of Pahang\'s Birthday', type: 'State' }
-  ];
+  // Fetch Malaysia Public Holidays dynamically for current year
+  const getDefaultMalaysianHolidays = async () => {
+    try {
+      const { holidayService } = await import('../../services/holidayService');
+      const year = new Date().getFullYear();
+      const result = await holidayService.getMalaysiaHolidays(year);
+      if (result.success && result.data.length > 0) {
+        return result.data.map(h => ({
+          date: h.date instanceof Date ? h.date.toISOString().split('T')[0] : h.date,
+          name: h.name || h.localName,
+          type: h.global ? 'National' : 'State'
+        }));
+      }
+    } catch (err) {
+      console.warn('Holiday API failed:', err);
+    }
+    return [];
+  };
 
   // Get user's company
   const getUserCompany = () => {
-    return user.originalCompanyName || user.company || 'RUBIX';
+    return user.originalCompanyName || user.company || '';
   };
 
   useEffect(() => {
@@ -275,7 +273,7 @@ function CompanyAdminLeaves() {
   const loadAllHolidays = async () => {
     setHolidaysLoading(true);
     try {
-      const defaultHolidays = getDefaultMalaysianHolidays();
+      const defaultHolidays = await getDefaultMalaysianHolidays();
       const customHolidays = await loadCustomHolidays();
       
       console.log('🎄 Default holidays:', defaultHolidays.length);
@@ -308,7 +306,7 @@ function CompanyAdminLeaves() {
       console.error('Error loading holidays:', error);
       setError('Failed to load holidays: ' + error.message);
       // Fallback to default holidays
-      setPublicHolidays(getDefaultMalaysianHolidays());
+      getDefaultMalaysianHolidays().then(h => setPublicHolidays(h));
     }
     setHolidaysLoading(false);
   };

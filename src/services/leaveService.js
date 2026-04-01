@@ -274,12 +274,15 @@ export const leaveService = {
       const startOfYear = new Date(currentYear, 0, 1);
       const endOfYear = new Date(currentYear, 11, 31, 23, 59, 59);
 
-      const approvedLeaves = await firestoreService.get('leaves', [
+      // Fetch approved leaves and filter by year client-side to avoid composite index issues
+      const allApprovedLeaves = await firestoreService.get('leaves', [
         where('userId', '==', userId),
-        where('status', '==', 'approved'),
-        where('startDate', '>=', startOfYear),
-        where('startDate', '<=', endOfYear)
+        where('status', '==', 'approved')
       ]);
+      const approvedLeaves = allApprovedLeaves.filter(leave => {
+        const start = leave.startDate?.toDate ? leave.startDate.toDate() : new Date(leave.startDate);
+        return start >= startOfYear && start <= endOfYear;
+      });
 
       const usedLeaves = {
         annual: 0,

@@ -113,7 +113,7 @@ export const generateMonthlyPayslips = async () => {
           grossSalary: grossSalary,
           netSalary: netSalary,
           status: 'draft',
-          company: employee.originalCompanyName || employee.company || 'RUBIX',
+          company: employee.originalCompanyName || employee.company || '',
           
           // Detailed breakdown
           employeeEPF: employeeEPF,
@@ -338,7 +338,7 @@ export const manualPayslipGeneration = async (targetMonth = null) => {
           grossSalary: grossSalary,
           netSalary: netSalary,
           status: 'draft',
-          company: employee.originalCompanyName || employee.company || 'RUBIX',
+          company: employee.originalCompanyName || employee.company || '',
           employeeEPF: employeeEPF,
           employeeEIS: employeeEIS,
           employeeSOCSO: employeeSOCSO,

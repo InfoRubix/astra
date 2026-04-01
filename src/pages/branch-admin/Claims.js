@@ -78,28 +78,9 @@ function BranchAdminClaims() {
   const claimsPerPage = 4;
   const [exportLoading, setExportLoading] = useState(false);
 
-  // Get branch name helper function
+  // Get branch name from user data
   const getBranchName = () => {
-    if (user?.branch) return user.branch;
-    
-    const branchMappings = {
-      'rubix-kl': 'KL Main Branch',
-      'rubix-johor': 'Johor Branch',
-      'rubix-penang': 'Penang Branch',
-      'afc-kl': 'KL Branch',
-      'afc-penang': 'Penang Branch',
-      'afc-ipoh': 'Ipoh Branch',
-      'kfc-kl': 'KL Branch',
-      'kfc-sabah': 'Sabah Branch',
-      'kfc-sarawak': 'Sarawak Branch',
-      'asiahahisam-kl': 'KL Branch',
-      'asiahahisam-shahalam': 'Shah Alam Branch',
-      'litigation-kl': 'KL Branch',
-      'litigation-ipoh': 'Ipoh Branch',
-      'litigation-johor': 'Johor Branch'
-    };
-    
-    return branchMappings[user?.branchId] || user?.branchName || 'Main Branch';
+    return user?.branchName || user?.branch || 'Branch';
   };
 
   useEffect(() => {
@@ -125,7 +106,7 @@ function BranchAdminClaims() {
   const loadBranchClaims = async () => {
     setLoading(true);
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       const branchName = getBranchName();
       
       console.log('🔍 Branch Admin loading claims for:', {
@@ -405,7 +386,7 @@ function BranchAdminClaims() {
           header: 'Processed Amount', 
           width: 1.2,
           formatter: (claim) => claim.status === 'approved' && claim.processedAmount ? 
-            `${claim.currency} ${claim.processedAmount.toFixed(2)}` : 'N/A'
+            `${claim.currency} ${claim.processedAmount?.toFixed(2) || "0.00"}` : 'N/A'
         }
       ];
 
@@ -416,7 +397,7 @@ function BranchAdminClaims() {
       const filters = {
         Status: currentTabData.label,
         Branch: branchName,
-        Company: user.originalCompanyName || user.company || 'RUBIX',
+        Company: user.originalCompanyName || user.company || '',
         'Total Claims': filteredClaims.length
       };
 
@@ -430,7 +411,7 @@ function BranchAdminClaims() {
         additionalInfo: {
           totalCount: filteredClaims.length,
           generatedBy: `${user.firstName} ${user.lastName}`,
-          company: user.originalCompanyName || user.company || 'RUBIX',
+          company: user.originalCompanyName || user.company || '',
           branch: branchName
         }
       });
@@ -487,7 +468,7 @@ function BranchAdminClaims() {
         ['Name', claim.userName],
         ['Email', claim.userEmail],
         ['Department', claim.department],
-        ['Company', claim.originalCompanyName || 'RUBIX'],
+        ['Company', claim.originalCompanyName || ''],
         ['Branch', claim.branchName || getBranchName()]
       ];
       
@@ -583,7 +564,7 @@ function BranchAdminClaims() {
         ];
         
         if (claim.status === 'approved' && claim.processedAmount) {
-          processingInfo.push(['Processed Amount', `${claim.currency} ${claim.processedAmount.toFixed(2)}`]);
+          processingInfo.push(['Processed Amount', `${claim.currency} ${claim.processedAmount?.toFixed(2) || "0.00"}`]);
         }
         
         if (claim.adminComments) {
@@ -620,7 +601,7 @@ function BranchAdminClaims() {
       const pageHeight = doc.internal.pageSize.height;
       doc.setFontSize(8);
       doc.setTextColor(100, 100, 100);
-      doc.text(`This is a computer-generated document from ${user.originalCompanyName || user.company || 'RUBIX'} - ${getBranchName()}`, 20, pageHeight - 20);
+      doc.text(`This is a computer-generated document from ${user.originalCompanyName || user.company || ''} - ${getBranchName()}`, 20, pageHeight - 20);
       doc.text('Confidential - For internal use only', 20, pageHeight - 15);
       
       // Save the PDF
@@ -1566,7 +1547,7 @@ function BranchAdminClaims() {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2">
-                      <strong>Company:</strong> {selectedClaim.originalCompanyName || 'RUBIX'}
+                      <strong>Company:</strong> {selectedClaim.originalCompanyName || ''}
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1666,7 +1647,7 @@ function BranchAdminClaims() {
                     {selectedClaim.status === 'approved' && selectedClaim.processedAmount && (
                       <Grid item xs={12} sm={6}>
                         <Typography variant="body2">
-                          <strong>Processed Amount:</strong> {selectedClaim.currency} {selectedClaim.processedAmount.toFixed(2)}
+                          <strong>Processed Amount:</strong> {selectedClaim.currency} {selectedClaim.processedAmount?.toFixed(2) || "0.00"}
                         </Typography>
                       </Grid>
                     )}

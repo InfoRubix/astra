@@ -285,8 +285,8 @@ class PDFService {
     const columns = [
       { key: 'name', header: 'Name', width: 1.5, formatter: (emp) => `${emp.firstName} ${emp.lastName}` },
       { key: 'email', header: 'Email', width: 2 },
-      { key: 'role', header: 'Role', width: 1, formatter: (emp) => emp.role.charAt(0).toUpperCase() + emp.role.slice(1) },
-      { key: 'company', header: 'Company', width: 1.5, formatter: (emp) => emp.company || emp.originalCompanyName || 'RUBIX' },
+      { key: 'role', header: 'Role', width: 1, formatter: (emp) => (emp.role || 'user').charAt(0).toUpperCase() + (emp.role || 'user').slice(1) },
+      { key: 'company', header: 'Company', width: 1.5, formatter: (emp) => emp.company || emp.originalCompanyName || '' },
       { key: 'department', header: 'Department', width: 1.5 },
       { key: 'position', header: 'Position', width: 1.5 },
       { key: 'phone', header: 'Phone', width: 1.5 },

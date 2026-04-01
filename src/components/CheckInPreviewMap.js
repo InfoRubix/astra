@@ -18,7 +18,7 @@ import {
 } from '@mui/icons-material';
 import { GoogleMap, Marker, Circle, useLoadScript } from '@react-google-maps/api';
 
-const libraries = ['places'];
+const libraries = ['places', 'geometry'];
 
 /**
  * CheckInPreviewMap Component
@@ -60,16 +60,14 @@ function CheckInPreviewMap({ companyLocation, validRadius = 500 }) {
           accuracy: position.coords.accuracy
         });
 
-        // Calculate distance using Haversine formula
-        const calculatedDistance = calculateDistance(
-          userLat,
-          userLng,
-          companyLocation.latitude,
-          companyLocation.longitude
-        );
-
-        setDistance(calculatedDistance);
-        setIsWithinRange(calculatedDistance * 1000 <= validRadius); // Convert km to meters
+        // Calculate distance using Google Maps Geometry library (meters)
+        if (window.google?.maps?.geometry) {
+          const from = new window.google.maps.LatLng(userLat, userLng);
+          const to = new window.google.maps.LatLng(companyLocation.latitude, companyLocation.longitude);
+          const calculatedDistance = window.google.maps.geometry.spherical.computeDistanceBetween(from, to);
+          setDistance(calculatedDistance); // in meters
+          setIsWithinRange(calculatedDistance <= validRadius);
+        }
         setLocationError('');
       },
       (error) => {
@@ -87,19 +85,6 @@ function CheckInPreviewMap({ companyLocation, validRadius = 500 }) {
       navigator.geolocation.clearWatch(watchId);
     };
   }, [companyLocation, validRadius]);
-
-  // Calculate distance between two coordinates (Haversine formula)
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a =
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c; // Distance in km
-  };
 
   // Calculate map center (midpoint or office location)
   const mapCenter = useMemo(() => {
@@ -124,10 +109,10 @@ function CheckInPreviewMap({ companyLocation, validRadius = 500 }) {
   const mapZoom = useMemo(() => {
     if (!distance) return 15;
 
-    if (distance < 0.1) return 17; // < 100m
-    if (distance < 0.5) return 16; // < 500m
-    if (distance < 1) return 15;   // < 1km
-    if (distance < 2) return 14;   // < 2km
+    if (distance < 100) return 17;   // < 100m
+    if (distance < 500) return 16;   // < 500m
+    if (distance < 1000) return 15;  // < 1km
+    if (distance < 2000) return 14;  // < 2km
     return 13;
   }, [distance]);
 
@@ -204,8 +189,8 @@ function CheckInPreviewMap({ companyLocation, validRadius = 500 }) {
         >
           <Typography variant="body2" sx={{ fontWeight: 600 }}>
             {isWithinRange
-              ? `✓ You're within check-in range (${distance?.toFixed(2)} km from office)`
-              : `⚠ You're outside check-in range (${distance?.toFixed(2)} km from office)`
+              ? `✓ You're within check-in range (${distance >= 1000 ? `${(distance / 1000).toFixed(2)} km` : `${Math.round(distance)} m`} from office)`
+              : `⚠ You're outside check-in range (${distance >= 1000 ? `${(distance / 1000).toFixed(2)} km` : `${Math.round(distance)} m`} from office)`
             }
           </Typography>
           <Typography variant="caption">

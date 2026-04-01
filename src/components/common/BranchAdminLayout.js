@@ -147,30 +147,9 @@ function BranchAdminLayout() {
     return <Navigate to="/login" replace />;
   }
 
-  // Get branch name from user data or derive from branchId
+  // Get branch name from user data
   const getBranchName = () => {
-    // Try to get branch name from user data, or derive from branchId
-    if (user.branch) return user.branch;
-    
-    // Fallback: derive from branchId
-    const branchMappings = {
-      'rubix-kl': 'KL Main Branch',
-      'rubix-johor': 'Johor Branch',
-      'rubix-penang': 'Penang Branch',
-      'afc-kl': 'KL Branch',
-      'afc-penang': 'Penang Branch',
-      'afc-ipoh': 'Ipoh Branch',
-      'kfc-kl': 'KL Branch',
-      'kfc-sabah': 'Sabah Branch',
-      'kfc-sarawak': 'Sarawak Branch',
-      'asiahahisam-kl': 'KL Branch',
-      'asiahahisam-shahalam': 'Shah Alam Branch',
-      'litigation-kl': 'KL Branch',
-      'litigation-ipoh': 'Ipoh Branch',
-      'litigation-johor': 'Johor Branch'
-    };
-    
-    return branchMappings[user.branchId] || 'Branch';
+    return user?.branchName || user?.branch || 'Branch';
   };
 
   const handleDrawerToggle = () => {

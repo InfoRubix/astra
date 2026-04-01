@@ -183,7 +183,7 @@ function ForgotPassword() {
                 Password Recovery
               </Typography>
               
-              {/* RUBIX Branding */}
+              {/* Branding */}
               <Typography variant="caption" sx={{
                 color: 'rgba(255, 255, 255, 0.6)',
                 fontSize: '0.7rem',
@@ -191,7 +191,7 @@ function ForgotPassword() {
                 letterSpacing: 1.2,
                 textTransform: 'uppercase'
               }}>
-                by RUBIX TECHNOLOGY
+                by ASTRA
               </Typography>
             </Box>
             

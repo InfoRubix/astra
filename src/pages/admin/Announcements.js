@@ -166,10 +166,10 @@ function Announcements() {
         if (announcement.visibility === 'all') {
           shouldNotify = true;
         } else if (announcement.visibility === 'company') {
-          const userCompany = userData.originalCompanyName || userData.company || 'RUBIX';
+          const userCompany = userData.originalCompanyName || userData.company || '';
           shouldNotify = userCompany.toUpperCase() === announcement.company.toUpperCase();
         } else if (announcement.visibility === 'department') {
-          const userCompany = userData.originalCompanyName || userData.company || 'RUBIX';
+          const userCompany = userData.originalCompanyName || userData.company || '';
           const companyMatch = userCompany.toUpperCase() === announcement.company.toUpperCase();
           const departmentMatch = userData.department === announcement.department;
           shouldNotify = companyMatch && departmentMatch;

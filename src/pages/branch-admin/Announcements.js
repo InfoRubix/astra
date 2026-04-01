@@ -92,7 +92,7 @@ function BranchAdminAnnouncements() {
       });
       
       // Initialize form with branch admin's company and branch
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       const userBranch = user.branchName || user.branch;
       setForm(prev => ({
         ...prev,
@@ -108,7 +108,7 @@ function BranchAdminAnnouncements() {
   const loadAnnouncements = async () => {
     setLoading(true);
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       const userBranch = user.branchName || user.branch;
       console.log('🔍 Branch Admin loading announcements for:', { company: userCompany, branch: userBranch });
       
@@ -151,7 +151,7 @@ function BranchAdminAnnouncements() {
 
   const loadAvailableDepartments = async () => {
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       const userBranch = user.branchName || user.branch;
       console.log('🔍 Branch Admin loading departments for:', { company: userCompany, branch: userBranch });
       
@@ -162,7 +162,7 @@ function BranchAdminAnnouncements() {
       
       usersSnapshot.docs.forEach(doc => {
         const userData = doc.data();
-        const userCompanyName = userData.originalCompanyName || userData.company || 'RUBIX';
+        const userCompanyName = userData.originalCompanyName || userData.company || '';
         const userBranchName = userData.branchName || userData.branch;
         
         // Only include departments from the same company and branch
@@ -187,7 +187,7 @@ function BranchAdminAnnouncements() {
 
   const createNotificationsForAnnouncement = async (announcement, announcementId) => {
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       const userBranch = user.branchName || user.branch;
       
       // Query users based on announcement visibility within the branch
@@ -204,7 +204,7 @@ function BranchAdminAnnouncements() {
 
         // Filter based on visibility - always within the same company and branch
         let shouldNotify = false;
-        const userCompanyName = userData.originalCompanyName || userData.company || 'RUBIX';
+        const userCompanyName = userData.originalCompanyName || userData.company || '';
         const userBranchName = userData.branchName || userData.branch;
         
         // Only notify users from the same company and branch
@@ -266,7 +266,7 @@ function BranchAdminAnnouncements() {
     }
 
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       const userBranch = user.branchName || user.branch;
       
       const newAnnouncement = {
@@ -317,7 +317,7 @@ function BranchAdminAnnouncements() {
     }
 
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       const userBranch = user.branchName || user.branch;
       
       const updateData = {
@@ -367,7 +367,7 @@ function BranchAdminAnnouncements() {
   };
 
   const resetForm = () => {
-    const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+    const userCompany = user.originalCompanyName || user.company || '';
     const userBranch = user.branchName || user.branch;
     setForm({
       title: '',

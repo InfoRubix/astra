@@ -122,12 +122,12 @@ export const profileService = {
   // Change password
   async changePassword(userId, currentPassword, newPassword) {
     try {
-      // Note: In a real application, you would use Firebase Auth for password changes
-      // This is a placeholder for the service structure
-      const user = await this.getProfile(userId);
-      
-      if (!user) {
-        throw new Error('User not found');
+      const { getAuth, signInWithEmailAndPassword, updatePassword } = await import('firebase/auth');
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+
+      if (!currentUser) {
+        throw new Error('No authenticated user found');
       }
 
       // Validate password requirements
@@ -136,10 +136,13 @@ export const profileService = {
         throw new Error(passwordValidation.errors.join(', '));
       }
 
-      // In Firebase Auth, you would use:
-      // await updatePassword(currentUser, newPassword);
-      
-      // For now, we'll just update the timestamp
+      // Re-authenticate with current password first
+      await signInWithEmailAndPassword(auth, currentUser.email, currentPassword);
+
+      // Update password in Firebase Auth
+      await updatePassword(currentUser, newPassword);
+
+      // Update timestamp in Firestore
       await firestoreService.update('users', userId, {
         passwordChangedAt: serverTimestamp()
       });
@@ -147,6 +150,15 @@ export const profileService = {
       return { success: true };
     } catch (error) {
       console.error('Error changing password:', error);
+      if (error.code === 'auth/wrong-password') {
+        throw new Error('Current password is incorrect');
+      }
+      if (error.code === 'auth/weak-password') {
+        throw new Error('New password is too weak');
+      }
+      if (error.code === 'auth/requires-recent-login') {
+        throw new Error('Please log out and log in again before changing your password');
+      }
       throw error;
     }
   },

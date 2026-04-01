@@ -48,7 +48,7 @@ function FeedbackSection() {
         userId: user.uid,
         userEmail: user.email,
         role: user.role,
-        company: user.originalCompanyName || user.company || 'RUBIX',
+        company: user.originalCompanyName || user.company || '',
         timestamp: serverTimestamp(),
         status: 'new'
       });

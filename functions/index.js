@@ -11,11 +11,14 @@ admin.initializeApp();
  */
 // Create email transporter
 const getEmailTransporter = () => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error('Email configuration missing: EMAIL_USER and EMAIL_PASS required in functions/.env');
+  }
   return nodemailer.createTransport({
-    service: 'gmail', // You can use 'outlook', 'yahoo', or custom SMTP
+    service: 'gmail',
     auth: {
-      user: process.env.EMAIL_USER || 'info@rubix.com.my',
-      pass: process.env.EMAIL_PASS || ''
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
     }
   });
 };
@@ -27,7 +30,7 @@ async function sendEmailNotification(to, subject, htmlContent) {
   try {
     const transporter = getEmailTransporter();
     const mailOptions = {
-      from: `Attendance System <${process.env.EMAIL_USER || 'info@rubix.com.my'}>`,
+      from: `Attendance System <${process.env.EMAIL_USER}>`,
       to: to,
       subject: subject,
       html: htmlContent

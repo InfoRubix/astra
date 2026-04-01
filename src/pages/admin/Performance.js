@@ -105,7 +105,7 @@ function Performance() {
 
   // Helper function to get employee's company consistently
   const getEmployeeCompany = (employee) => {
-    return employee.company || employee.originalCompanyName || 'RUBIX';
+    return employee.company || employee.originalCompanyName || '';
   };
 
   useEffect(() => {
@@ -346,43 +346,28 @@ function Performance() {
         }
       };
 
-      // Complete Malaysian public holidays for 2025 (fallback)
-      const getDefaultMalaysianHolidays = () => {
-        return [
-          // Fixed National Holidays
-          { date: new Date('2025-01-01'), name: 'New Year\'s Day', type: 'national' },
-          { date: new Date('2025-05-01'), name: 'Labour Day', type: 'national' },
-          { date: new Date('2025-08-31'), name: 'National Day', type: 'national' },
-          { date: new Date('2025-09-16'), name: 'Malaysia Day', type: 'national' },
-          { date: new Date('2025-12-25'), name: 'Christmas Day', type: 'national' },
-          
-          // Chinese New Year 2025 (January 29-30)
-          { date: new Date('2025-01-29'), name: 'Chinese New Year', type: 'national' },
-          { date: new Date('2025-01-30'), name: 'Chinese New Year Holiday', type: 'national' },
-          
-          // Islamic Holidays 2025 (estimated dates - may vary)
-          { date: new Date('2025-03-30'), name: 'Hari Raya Aidilfitri', type: 'national' },
-          { date: new Date('2025-03-31'), name: 'Hari Raya Aidilfitri Holiday', type: 'national' },
-          { date: new Date('2025-06-07'), name: 'Hari Raya Haji', type: 'national' },
-          { date: new Date('2025-06-28'), name: 'Awal Muharram (Islamic New Year)', type: 'national' },
-          { date: new Date('2025-09-05'), name: 'Maulidur Rasul', type: 'national' },
-          
-          // Buddhist/Hindu Holidays
-          { date: new Date('2025-05-12'), name: 'Wesak Day', type: 'national' },
-          { date: new Date('2025-10-20'), name: 'Deepavali', type: 'national' }, // Added Deepavali
-          
-          // Royal Holidays
-          { date: new Date('2025-06-09'), name: 'Yang di-Pertuan Agong\'s Birthday', type: 'national' },
-          
-          // Replacement Holidays (Cuti Ganti)
-          { date: new Date('2025-09-01'), name: 'Replacement Holiday (National Day)', type: 'replacement' }
-        ];
+      // Fallback: use holidayService which fetches dynamically per year
+      const getDefaultMalaysianHolidays = async () => {
+        try {
+          const { holidayService } = await import('../../services/holidayService');
+          const result = await holidayService.getMalaysiaHolidays(currentYear);
+          if (result.success && result.data.length > 0) {
+            return result.data.map(h => ({
+              date: h.date instanceof Date ? h.date : new Date(h.date),
+              name: h.name || h.localName,
+              type: h.global ? 'national' : 'state'
+            }));
+          }
+        } catch (err) {
+          console.warn('Holiday API failed:', err);
+        }
+        return [];
       };
 
       // Get all holidays (API + default + custom)
       const currentYear = new Date().getFullYear();
       const apiHolidays = await getMalaysianHolidays(currentYear);
-      const defaultHolidays = getDefaultMalaysianHolidays();
+      const defaultHolidays = await getDefaultMalaysianHolidays();
       const customHolidays = await loadCustomHolidays();
       
       // Combine all holidays, prioritizing custom and API over defaults

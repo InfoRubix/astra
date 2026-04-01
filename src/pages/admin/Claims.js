@@ -303,7 +303,7 @@ function AdminClaims() {
           key: 'originalCompanyName', 
           header: 'Company', 
           width: 1.2,
-          formatter: (claim) => claim.originalCompanyName || 'RUBIX'
+          formatter: (claim) => claim.originalCompanyName || ''
         },
         { 
           key: 'claimType', 
@@ -370,7 +370,7 @@ function AdminClaims() {
           header: 'Processed Amount', 
           width: 1.2,
           formatter: (claim) => claim.status === 'approved' && claim.processedAmount ? 
-            `${claim.currency} ${claim.processedAmount.toFixed(2)}` : 'N/A'
+            `${claim.currency} ${claim.processedAmount?.toFixed(2) || "0.00"}` : 'N/A'
         }
       ];
 
@@ -392,7 +392,7 @@ function AdminClaims() {
         additionalInfo: {
           totalCount: filteredClaims.length,
           generatedBy: `${user.firstName} ${user.lastName}`,
-          company: 'RUBIX Attendance Management System'
+          company: user.company || 'ASTRA'
         }
       });
 
@@ -447,7 +447,7 @@ function AdminClaims() {
         ['Name', claim.userName],
         ['Email', claim.userEmail],
         ['Department', claim.department],
-        ['Company', claim.originalCompanyName || 'RUBIX']
+        ['Company', claim.originalCompanyName || '']
       ];
       
       doc.setFontSize(10);
@@ -542,7 +542,7 @@ function AdminClaims() {
         ];
         
         if (claim.status === 'approved' && claim.processedAmount) {
-          processingInfo.push(['Processed Amount', `${claim.currency} ${claim.processedAmount.toFixed(2)}`]);
+          processingInfo.push(['Processed Amount', `${claim.currency} ${claim.processedAmount?.toFixed(2) || "0.00"}`]);
         }
         
         if (claim.adminComments) {
@@ -1356,7 +1356,7 @@ function AdminClaims() {
                               {claim.department} • {claim.userEmail}
                             </Typography>
                             <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                              Company: {claim.originalCompanyName || 'RUBIX'}
+                              Company: {claim.originalCompanyName || ''}
                             </Typography>
                           </Box>
                           <Chip 
@@ -1679,7 +1679,7 @@ function AdminClaims() {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2">
-                      <strong>Company:</strong> {selectedClaim.originalCompanyName || 'RUBIX'}
+                      <strong>Company:</strong> {selectedClaim.originalCompanyName || ''}
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1779,7 +1779,7 @@ function AdminClaims() {
                     {selectedClaim.status === 'approved' && selectedClaim.processedAmount && (
                       <Grid item xs={12} sm={6}>
                         <Typography variant="body2">
-                          <strong>Processed Amount:</strong> {selectedClaim.currency} {selectedClaim.processedAmount.toFixed(2)}
+                          <strong>Processed Amount:</strong> {selectedClaim.currency} {selectedClaim.processedAmount?.toFixed(2) || "0.00"}
                         </Typography>
                       </Grid>
                     )}

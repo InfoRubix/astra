@@ -23,28 +23,9 @@ export const useBranchDashboard = (user) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Get branch name helper
+  // Get branch name from user data
   const getBranchName = () => {
-    if (user?.branch) return user.branch;
-    
-    const branchMappings = {
-      'rubix-kl': 'KL Main Branch',
-      'rubix-johor': 'Johor Branch',
-      'rubix-penang': 'Penang Branch',
-      'afc-kl': 'KL Branch',
-      'afc-penang': 'Penang Branch',
-      'afc-ipoh': 'Ipoh Branch',
-      'kfc-kl': 'KL Branch',
-      'kfc-sabah': 'Sabah Branch',
-      'kfc-sarawak': 'Sarawak Branch',
-      'asiahahisam-kl': 'KL Branch',
-      'asiahahisam-shahalam': 'Shah Alam Branch',
-      'litigation-kl': 'KL Branch',
-      'litigation-ipoh': 'Ipoh Branch',
-      'litigation-johor': 'Johor Branch'
-    };
-    
-    return branchMappings[user?.branchId] || 'Branch';
+    return user?.branchName || user?.branch || 'Branch';
   };
 
   useEffect(() => {
@@ -113,8 +94,20 @@ export const useBranchDashboard = (user) => {
         const pendingLeaves = branchLeaves.filter(leave => leave.status === 'pending');
         const pendingClaims = branchClaims.filter(claim => claim.status === 'pending');
 
-        // Mock present today calculation (you can implement real attendance logic)
-        const presentToday = Math.floor(branchEmployees.length * 0.85); // 85% attendance rate
+        // Query real attendance for today
+        let presentToday = 0;
+        try {
+          const todayString = new Date().toISOString().split('T')[0];
+          const attendanceQuery = query(
+            collection(db, 'attendance'),
+            where('dateString', '==', todayString)
+          );
+          const attendanceSnap = await getDocs(attendanceQuery);
+          const todayRecords = attendanceSnap.docs.map(d => d.data());
+          presentToday = todayRecords.filter(r => branchEmployeeIds.includes(r.userId)).length;
+        } catch (attendanceError) {
+          console.warn('Could not fetch today attendance:', attendanceError);
+        }
 
         // Generate recent activity
         const recentActivity = [

@@ -91,7 +91,7 @@ function CompanyAdminSettings() {
         fullUserObject: user
       });
       
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       setForm(prev => ({
         ...prev,
         company: userCompany
@@ -104,7 +104,7 @@ function CompanyAdminSettings() {
   const loadCompanySettings = async () => {
     setLoading(true);
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       console.log('🔍 Company Admin loading settings for company:', userCompany);
       
       // Load settings for this specific company only
@@ -142,7 +142,7 @@ function CompanyAdminSettings() {
     }
 
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       
       const newSetting = {
         company: userCompany, // Always use company admin's company
@@ -184,7 +184,7 @@ function CompanyAdminSettings() {
     }
 
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       
       const settingRef = doc(db, 'companySettings', companySettings.id);
       await updateDoc(settingRef, {
@@ -231,7 +231,7 @@ function CompanyAdminSettings() {
   };
 
   const handleCreate = () => {
-    const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+    const userCompany = user.originalCompanyName || user.company || '';
     setForm(prev => ({
       ...prev,
       company: userCompany

@@ -115,7 +115,7 @@ function CompanyPerformance() {
 
   // Helper function to get employee's company consistently
   const getEmployeeCompany = (employee) => {
-    return employee.company || employee.originalCompanyName || 'RUBIX';
+    return employee.company || employee.originalCompanyName || '';
   };
 
   // Filter and search functionality

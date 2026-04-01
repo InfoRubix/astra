@@ -84,7 +84,7 @@ service firebase.storage {
     // Temporary uploads (24-hour TTL)
     match /temp/{userId}/{allPaths=**} {
       allow read, write: if isAuthenticated() && isOwner(userId);
-      allow delete: if true; // Allow cleanup by Cloud Functions
+      allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
     }
   }
 }

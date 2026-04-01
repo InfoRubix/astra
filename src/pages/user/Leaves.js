@@ -106,30 +106,23 @@ function Leaves() {
     description: type.description
   }));
 
-  // Default Malaysian public holidays for 2025
-  const getDefaultMalaysianHolidays = () => {
-    return [
-      { date: '2025-01-01', name: 'New Year\'s Day', type: 'National' },
-      { date: '2025-01-29', name: 'Chinese New Year', type: 'National' },
-      { date: '2025-01-30', name: 'Chinese New Year (2nd Day)', type: 'National' },
-      { date: '2025-03-30', name: 'Hari Raya Aidilfitri', type: 'National' },
-      { date: '2025-03-31', name: 'Hari Raya Aidilfitri (2nd Day)', type: 'National' },
-      { date: '2025-05-01', name: 'Labour Day', type: 'National' },
-      { date: '2025-05-12', name: 'Wesak Day', type: 'National' },
-      { date: '2025-06-07', name: 'Hari Raya Haji', type: 'National' },
-      { date: '2025-06-09', name: 'Yang di-Pertuan Agong\'s Birthday', type: 'National' },
-      { date: '2025-06-28', name: 'Awal Muharram (Islamic New Year)', type: 'National' },
-      { date: '2025-08-31', name: 'National Day', type: 'National' },
-      { date: '2025-09-01', name: 'Replacement Holiday (National Day)', type: 'National' },
-      { date: '2025-09-05', name: 'Maulidur Rasul', type: 'National' },
-      { date: '2025-09-16', name: 'Malaysia Day', type: 'National' },
-      { date: '2025-10-20', name: 'Deepavali', type: 'National' },
-      { date: '2025-12-25', name: 'Christmas Day', type: 'National' },
-      // State holidays (commonly observed)
-      { date: '2025-02-01', name: 'Federal Territory Day', type: 'State' },
-      { date: '2025-03-11', name: 'Sultan of Selangor\'s Birthday', type: 'State' },
-      { date: '2025-07-07', name: 'George Town World Heritage City Day', type: 'State' }
-    ];
+  // Fetch Malaysia Public Holidays dynamically for current year
+  const getDefaultMalaysianHolidays = async () => {
+    try {
+      const { holidayService } = await import('../../services/holidayService');
+      const year = new Date().getFullYear();
+      const result = await holidayService.getMalaysiaHolidays(year);
+      if (result.success && result.data.length > 0) {
+        return result.data.map(h => ({
+          date: h.date instanceof Date ? h.date.toISOString().split('T')[0] : h.date,
+          name: h.name || h.localName,
+          type: h.global ? 'National' : 'State'
+        }));
+      }
+    } catch (err) {
+      console.warn('Holiday API failed:', err);
+    }
+    return [];
   };
 
   // Load custom holidays from Firestore (holidays added by admin)
@@ -153,34 +146,15 @@ function Leaves() {
     }
   };
 
-  // Get branch name helper function
+  // Get branch name from user data
   const getBranchName = () => {
-    if (user?.branch) return user.branch;
-    
-    const branchMappings = {
-      'rubix-kl': 'KL Main Branch',
-      'rubix-johor': 'Johor Branch',
-      'rubix-penang': 'Penang Branch',
-      'afc-kl': 'KL Branch',
-      'afc-penang': 'Penang Branch',
-      'afc-ipoh': 'Ipoh Branch',
-      'kfc-kl': 'KL Branch',
-      'kfc-sabah': 'Sabah Branch',
-      'kfc-sarawak': 'Sarawak Branch',
-      'asiahahisam-kl': 'KL Branch',
-      'asiahahisam-shahalam': 'Shah Alam Branch',
-      'litigation-kl': 'KL Branch',
-      'litigation-ipoh': 'Ipoh Branch',
-      'litigation-johor': 'Johor Branch'
-    };
-    
-    return branchMappings[user?.branchId] || user?.branchName || 'Main Branch';
+    return user?.branchName || user?.branch || 'Branch';
   };
 
   // Load all holidays (default + custom)
   const loadAllHolidays = async () => {
     try {
-      const defaultHolidays = getDefaultMalaysianHolidays();
+      const defaultHolidays = await getDefaultMalaysianHolidays();
       const customHolidays = await loadCustomHolidays();
       
       // Combine holidays and remove duplicates (prioritize custom over default)
@@ -208,7 +182,7 @@ function Leaves() {
     } catch (error) {
       console.error('Error loading holidays:', error);
       // Fallback to default holidays only
-      setPublicHolidays(getDefaultMalaysianHolidays());
+      getDefaultMalaysianHolidays().then(h => setPublicHolidays(h));
     }
   };
 
@@ -237,7 +211,7 @@ function Leaves() {
   const loadTeamMembers = async () => {
     try {
       // Get user's company for filtering team members
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       console.log('Loading team members for company:', userCompany);
       
       // Load all users from the same company (excluding the current user)
@@ -273,7 +247,7 @@ function Leaves() {
         }));
         
         // Filter by company field as fallback
-        const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+        const userCompany = user.originalCompanyName || user.company || '';
         const filteredUsers = allUsers.filter(member => 
           member.id !== user.uid && 
           member.role !== 'admin' && 
@@ -568,7 +542,7 @@ function Leaves() {
     
     try {
       // Debug: Check what company value we're using for leaves
-      const resolvedCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const resolvedCompany = user.originalCompanyName || user.company || '';
       console.log('🔍 Creating leave with company data:', {
         userOriginalCompanyName: user.originalCompanyName,
         userCompany: user.company,
@@ -618,7 +592,7 @@ function Leaves() {
       try {
         // Create notification for admins about new leave request
         const adminNotification = {
-          originalCompanyName: user.originalCompanyName || user.company || 'RUBIX',
+          originalCompanyName: user.originalCompanyName || user.company || '',
           isAdminNotification: true, // Flag to identify admin notifications
           type: 'pending_approval',
           title: 'New Leave Request Requires Approval',

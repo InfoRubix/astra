@@ -131,7 +131,7 @@ function ForgottenCheckoutDialog({ open, onClose, attendanceRecord, onSuccess })
         userId: user.uid,
         userName: `${user.firstName} ${user.lastName}`,
         userEmail: user.email,
-        company: user.company || user.originalCompanyName || 'RUBIX',
+        company: user.company || user.originalCompanyName || '',
         attendanceId: attendanceRecord.id,
         date: attendanceRecord.date || attendanceRecord.dateString,
         checkInTime: checkInTime, // Use the resolved checkInTime

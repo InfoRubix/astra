@@ -52,7 +52,7 @@ async function migrateUsersCollection() {
     const userData = userDoc.data();
     
     if (userData.companyName && !userData.company) {
-      const mappedCompany = COMPANY_MAPPING[userData.companyName] || 'RUBIX';
+      const mappedCompany = COMPANY_MAPPING[userData.companyName] || '';
       
       promises.push(
         updateDoc(doc(db, 'users', userDoc.id), {
@@ -80,7 +80,7 @@ async function migrateAttendanceCollection() {
     const attendanceData = attendanceDoc.data();
     
     if (attendanceData.companyName && !attendanceData.company) {
-      const mappedCompany = COMPANY_MAPPING[attendanceData.companyName] || 'RUBIX';
+      const mappedCompany = COMPANY_MAPPING[attendanceData.companyName] || '';
       
       promises.push(
         updateDoc(doc(db, 'attendance', attendanceDoc.id), {
@@ -106,7 +106,7 @@ async function migrateLeavesCollection() {
     const leaveData = leaveDoc.data();
     
     if (leaveData.companyName && !leaveData.company) {
-      const mappedCompany = COMPANY_MAPPING[leaveData.companyName] || 'RUBIX';
+      const mappedCompany = COMPANY_MAPPING[leaveData.companyName] || '';
       
       promises.push(
         updateDoc(doc(db, 'leaves', leaveDoc.id), {
@@ -132,7 +132,7 @@ async function migrateClaimsCollection() {
     const claimData = claimDoc.data();
     
     if (claimData.companyName && !claimData.company) {
-      const mappedCompany = COMPANY_MAPPING[claimData.companyName] || 'RUBIX';
+      const mappedCompany = COMPANY_MAPPING[claimData.companyName] || '';
       
       promises.push(
         updateDoc(doc(db, 'claims', claimDoc.id), {

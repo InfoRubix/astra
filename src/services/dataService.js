@@ -247,11 +247,11 @@ export const companyService = {
   },
 
   // Update employee count
-  async updateEmployeeCount(companyName, increment = 1) {
+  async updateEmployeeCount(companyName, count = 1) {
     const company = await this.getByName(companyName);
     if (company) {
       return await firestoreService.update('companies', company.id, {
-        employeeCount: increment(increment)
+        employeeCount: increment(count)
       });
     }
   }

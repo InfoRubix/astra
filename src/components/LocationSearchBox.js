@@ -22,7 +22,7 @@ import {
 } from '@mui/icons-material';
 import { useLoadScript } from '@react-google-maps/api';
 
-const libraries = ['places'];
+const libraries = ['places', 'geometry'];
 
 /**
  * LocationSearchBox Component

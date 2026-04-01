@@ -99,7 +99,7 @@ function CompanyAdminClaims() {
   const loadClaims = async () => {
     setLoading(true);
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       console.log('🔍 Company Admin loading claims for company:', userCompany);
       
       // Load claims only for this company admin's company
@@ -360,7 +360,7 @@ function CompanyAdminClaims() {
           header: 'Processed Amount', 
           width: 1.2,
           formatter: (claim) => claim.status === 'approved' && claim.processedAmount ? 
-            `${claim.currency} ${claim.processedAmount.toFixed(2)}` : 'N/A'
+            `${claim.currency} ${claim.processedAmount?.toFixed(2) || "0.00"}` : 'N/A'
         }
       ];
 
@@ -369,7 +369,7 @@ function CompanyAdminClaims() {
       
       const filters = {
         Status: currentTabData.label,
-        Company: user.originalCompanyName || user.company || 'RUBIX',
+        Company: user.originalCompanyName || user.company || '',
         'Total Claims': filteredClaims.length
       };
 
@@ -383,7 +383,7 @@ function CompanyAdminClaims() {
         additionalInfo: {
           totalCount: filteredClaims.length,
           generatedBy: `${user.firstName} ${user.lastName}`,
-          company: user.originalCompanyName || user.company || 'RUBIX'
+          company: user.originalCompanyName || user.company || ''
         }
       });
 
@@ -438,7 +438,7 @@ function CompanyAdminClaims() {
         ['Name', claim.userName],
         ['Email', claim.userEmail],
         ['Department', claim.department],
-        ['Company', claim.originalCompanyName || 'RUBIX']
+        ['Company', claim.originalCompanyName || '']
       ];
       
       doc.setFontSize(10);
@@ -533,7 +533,7 @@ function CompanyAdminClaims() {
         ];
         
         if (claim.status === 'approved' && claim.processedAmount) {
-          processingInfo.push(['Processed Amount', `${claim.currency} ${claim.processedAmount.toFixed(2)}`]);
+          processingInfo.push(['Processed Amount', `${claim.currency} ${claim.processedAmount?.toFixed(2) || "0.00"}`]);
         }
         
         if (claim.adminComments) {
@@ -570,7 +570,7 @@ function CompanyAdminClaims() {
       const pageHeight = doc.internal.pageSize.height;
       doc.setFontSize(8);
       doc.setTextColor(100, 100, 100);
-      doc.text(`This is a computer-generated document from ${user.originalCompanyName || user.company || 'RUBIX'}`, 20, pageHeight - 20);
+      doc.text(`This is a computer-generated document from ${user.originalCompanyName || user.company || ''}`, 20, pageHeight - 20);
       doc.text('Confidential - For internal use only', 20, pageHeight - 15);
       
       // Save the PDF
@@ -1511,7 +1511,7 @@ function CompanyAdminClaims() {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2">
-                      <strong>Company:</strong> {selectedClaim.originalCompanyName || 'RUBIX'}
+                      <strong>Company:</strong> {selectedClaim.originalCompanyName || ''}
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -1611,7 +1611,7 @@ function CompanyAdminClaims() {
                     {selectedClaim.status === 'approved' && selectedClaim.processedAmount && (
                       <Grid item xs={12} sm={6}>
                         <Typography variant="body2">
-                          <strong>Processed Amount:</strong> {selectedClaim.currency} {selectedClaim.processedAmount.toFixed(2)}
+                          <strong>Processed Amount:</strong> {selectedClaim.currency} {selectedClaim.processedAmount?.toFixed(2) || "0.00"}
                         </Typography>
                       </Grid>
                     )}

@@ -92,7 +92,7 @@ function BranchAdminForgottenCheckouts() {
   const loadRequests = async () => {
     setLoading(true);
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       const userBranch = user.branchName || user.branch;
       console.log('Loading forgotten checkout requests for branch:', { company: userCompany, branch: userBranch });
       
@@ -116,7 +116,7 @@ function BranchAdminForgottenCheckouts() {
 
   const loadStats = async () => {
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       const userBranch = user.branchName || user.branch;
       console.log('Loading stats for branch:', { company: userCompany, branch: userBranch });
       

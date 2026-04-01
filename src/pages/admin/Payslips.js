@@ -295,7 +295,7 @@ function Payslips() {
         const hasValidRole = validRoles.includes(emp.role);
         
         // Company filtering
-        const empCompany = emp.company || emp.originalCompanyName || 'RUBIX';
+        const empCompany = emp.company || emp.originalCompanyName || '';
         const sameCompany = empCompany.toUpperCase() === companyName.toUpperCase();
         
         return hasValidRole && sameCompany;
@@ -429,7 +429,7 @@ function Payslips() {
         status: form.status,
         createdBy: user.uid,
         createdByName: `${user.firstName} ${user.lastName}`,
-        company: selectedEmployee ? (selectedEmployee.originalCompanyName || selectedEmployee.company || 'RUBIX') : (user.company || user.originalCompanyName || 'RUBIX'),
+        company: selectedEmployee ? (selectedEmployee.originalCompanyName || selectedEmployee.company || '') : (user.company || user.originalCompanyName || ''),
 
         // Detailed breakdown fields
         employeeEPF: parseFloat(form.employeeEPF) || 0,
@@ -1792,7 +1792,7 @@ function Payslips() {
                           </IconButton>
                         )}
                         <Chip 
-                          label={payslip.status.charAt(0).toUpperCase() + payslip.status.slice(1)}
+                          label={(payslip.status || 'pending').charAt(0).toUpperCase() + (payslip.status || 'pending').slice(1)}
                           color={getStatusColor(payslip.status)}
                           size="small"
                           sx={{ fontSize: '0.75rem' }}
@@ -1987,7 +1987,7 @@ function Payslips() {
                     
                     <TableCell>
                       <Chip 
-                        label={payslip.status.charAt(0).toUpperCase() + payslip.status.slice(1)}
+                        label={(payslip.status || 'pending').charAt(0).toUpperCase() + (payslip.status || 'pending').slice(1)}
                         color={getStatusColor(payslip.status)}
                         size="small"
                       />
@@ -2257,7 +2257,7 @@ function Payslips() {
                               fontSize: '0.75rem'
                             }}
                           >
-                            {companyName.charAt(0)}
+                            {(companyName || '?').charAt(0)}
                           </Avatar>
                           <Typography variant="body2">{companyName}</Typography>
                         </Box>

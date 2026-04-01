@@ -12,71 +12,160 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    function isCompanyAdmin() {
+      return isAuthenticated() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'company_admin';
+    }
+
+    function isBranchAdmin() {
+      return isAuthenticated() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'branch_admin';
+    }
+
+    function isAnyAdmin() {
+      let role = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return isAuthenticated() && (role == 'admin' || role == 'company_admin' || role == 'branch_admin');
+    }
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // SIMPLIFIED RULES FOR DEBUGGING - ADMINS HAVE FULL ACCESS
-
-    // FCM Tokens - Allow Cloud Functions service account to read/write
-    // Cloud Functions need this to send notifications
+    // FCM Tokens
     match /fcmTokens/{tokenId} {
       allow read, write: if isAuthenticated();
-      allow read, write: if request.auth.token.firebase.sign_in_provider == 'custom'; // Service accounts
     }
 
-    // Company Settings - Allow Cloud Functions to read
+    // Company Settings - read by all, write by admins
     match /companySettings/{settingId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
-      allow read: if request.auth.token.firebase.sign_in_provider == 'custom'; // Service accounts
+      allow write: if isAnyAdmin();
     }
 
     // Users collection
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
+      allow read: if isOwner(userId) || isAnyAdmin();
       allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) || isAnyAdmin();
       allow delete: if isAdmin();
-      // Allow Cloud Functions to read for notification purposes
-      allow read: if request.auth.token.firebase.sign_in_provider == 'custom';
     }
 
-    // Attendance collection - Full admin access
+    // Attendance collection - create only for self
     match /attendance/{attendanceId} {
-      allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow read: if isOwner(resource.data.userId) || isAnyAdmin();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwner(resource.data.userId) || isAnyAdmin();
       allow delete: if isAdmin();
     }
 
-    // Leaves collection - Full admin access
+    // Leaves collection - create only for self
     match /leaves/{leaveId} {
-      allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow read: if isOwner(resource.data.userId) || isAnyAdmin();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwner(resource.data.userId) || isAnyAdmin();
       allow delete: if isAdmin();
     }
 
-    // Claims collection - Full admin access
+    // Claims collection - create only for self
     match /claims/{claimId} {
-      allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow create: if isAuthenticated();
-      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow read: if isOwner(resource.data.userId) || isAnyAdmin();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwner(resource.data.userId) || isAnyAdmin();
       allow delete: if isAdmin();
     }
 
-    // Notifications collection - Full admin access
+    // Notifications collection
     match /notifications/{notificationId} {
-      allow read: if isAdmin() || (resource.data.get('userId', null) != null && isOwner(resource.data.userId));
+      allow read: if isAnyAdmin() || (resource.data.get('userId', null) != null && isOwner(resource.data.userId));
       allow create: if isAuthenticated();
-      allow update: if isAdmin() || (resource.data.get('userId', null) != null && isOwner(resource.data.userId));
+      allow update: if isAnyAdmin() || (resource.data.get('userId', null) != null && isOwner(resource.data.userId));
       allow delete: if isAdmin();
     }
 
-    // Other collections - Allow all for authenticated users
+    // Companies collection - read by all, write by admins
+    match /companies/{companyId} {
+      allow read: if isAuthenticated();
+      allow write: if isAnyAdmin();
+    }
+
+    // Branches collection - read by all, write by admins
+    match /branches/{branchId} {
+      allow read: if isAuthenticated();
+      allow write: if isAnyAdmin();
+    }
+
+    // Public Holidays - read by all, write by admins
+    match /publicHolidays/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAnyAdmin();
+    }
+
+    // Announcements - read by all, write by admins
+    match /announcements/{announcementId} {
+      allow read: if isAuthenticated();
+      allow write: if isAnyAdmin();
+    }
+
+    // Payslips - read by owner/admin, write by admins
+    match /payslips/{payslipId} {
+      allow read: if isOwner(resource.data.employeeId) || isAnyAdmin();
+      allow write: if isAnyAdmin();
+    }
+
+    // Forgotten checkout requests
+    match /forgottenCheckoutRequests/{requestId} {
+      allow read: if isOwner(resource.data.userId) || isAnyAdmin();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwner(resource.data.userId) || isAnyAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Custom holidays - read by all, write by admins
+    match /customHolidays/{holidayId} {
+      allow read: if isAuthenticated();
+      allow write: if isAnyAdmin();
+    }
+
+    // Leave quotas - read by all, write by admins
+    match /leaveQuotas/{quotaId} {
+      allow read: if isAuthenticated();
+      allow write: if isAnyAdmin();
+    }
+
+    // Leave types - read by all, write by admins
+    match /leaveTypes/{typeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAnyAdmin();
+    }
+
+    // Positions - read by all, write by admins
+    match /positions/{positionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAnyAdmin();
+    }
+
+    // Feedback - create by all, read/manage by admins
+    match /feedback/{feedbackId} {
+      allow read: if isAnyAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    // Audit logs - read/write by admins only
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+    }
+
+    // Admin logs
+    match /adminLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAnyAdmin();
+    }
+
+    // Deny everything else by default
     match /{document=**} {
-      allow read, write: if isAuthenticated();
+      allow read, write: if false;
     }
   }
 }

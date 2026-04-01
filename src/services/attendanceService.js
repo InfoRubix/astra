@@ -329,10 +329,10 @@ export const attendanceService = {
         // Update existing record
         const updateData = {
           status: attendanceData.status,
-          checkInTime: attendanceData.clockInTime || attendanceData.checkInTime ? serverTimestamp() : null,
-          clockInTime: attendanceData.clockInTime || attendanceData.checkInTime ? serverTimestamp() : null,
-          checkOutTime: attendanceData.clockOutTime || attendanceData.checkOutTime ? serverTimestamp() : null,
-          clockOutTime: attendanceData.clockOutTime || attendanceData.checkOutTime ? serverTimestamp() : null,
+          checkInTime: (attendanceData.clockInTime || attendanceData.checkInTime) ? serverTimestamp() : null,
+          clockInTime: (attendanceData.clockInTime || attendanceData.checkInTime) ? serverTimestamp() : null,
+          checkOutTime: (attendanceData.clockOutTime || attendanceData.checkOutTime) ? serverTimestamp() : null,
+          clockOutTime: (attendanceData.clockOutTime || attendanceData.checkOutTime) ? serverTimestamp() : null,
           workingHours: attendanceData.workingHours || 0,
           overtimeHours: attendanceData.overtimeHours || 0,
           notes: attendanceData.notes || '',

@@ -144,7 +144,7 @@ function BranchAdminReports() {
   const loadReportData = async () => {
     setLoading(true);
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       const userBranch = user.branchName || user.branch;
       console.log('Loading branch report data for:', { company: userCompany, branch: userBranch });
 
@@ -166,7 +166,7 @@ function BranchAdminReports() {
       const employees = employeesSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(emp => {
-          const empCompany = emp.originalCompanyName || emp.company || 'RUBIX';
+          const empCompany = emp.originalCompanyName || emp.company || '';
           const empBranch = emp.branchName || emp.branch;
           return empCompany.toUpperCase() === userCompany.toUpperCase() &&
                  empBranch === userBranch;
@@ -178,7 +178,7 @@ function BranchAdminReports() {
       const attendance = attendanceSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(att => {
-          const attCompany = att.originalCompanyName || att.company || 'RUBIX';
+          const attCompany = att.originalCompanyName || att.company || '';
           const attBranch = att.branchName || att.branch;
           const attDate = att.date?.toDate ? att.date.toDate() : new Date(att.date);
           return attCompany.toUpperCase() === userCompany.toUpperCase() &&
@@ -192,7 +192,7 @@ function BranchAdminReports() {
       const leaves = leavesSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(leave => {
-          const leaveCompany = leave.originalCompanyName || leave.company || 'RUBIX';
+          const leaveCompany = leave.originalCompanyName || leave.company || '';
           const leaveBranch = leave.branchName || leave.branch;
           const leaveDate = leave.createdAt?.toDate ? leave.createdAt.toDate() : new Date(leave.createdAt);
           return leaveCompany.toUpperCase() === userCompany.toUpperCase() &&
@@ -206,7 +206,7 @@ function BranchAdminReports() {
       const claims = claimsSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(claim => {
-          const claimCompany = claim.originalCompanyName || claim.company || 'RUBIX';
+          const claimCompany = claim.originalCompanyName || claim.company || '';
           const claimBranch = claim.branchName || claim.branch;
           const claimDate = claim.createdAt?.toDate ? claim.createdAt.toDate() : new Date(claim.createdAt);
           return claimCompany.toUpperCase() === userCompany.toUpperCase() &&
@@ -356,7 +356,7 @@ function BranchAdminReports() {
   };
 
   const generateCSVReport = (report, metrics, dateRange) => {
-    const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+    const userCompany = user.originalCompanyName || user.company || '';
     const userBranch = user.branchName || user.branch;
     let csvContent = `Branch Report: ${report.title}\n`;
     csvContent += `Company: ${userCompany}\n`;

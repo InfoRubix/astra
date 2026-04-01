@@ -485,7 +485,7 @@ function UserLayout() {
                 letterSpacing: 1,
                 textTransform: 'uppercase'
               }}>
-                by RUBIX TECHNOLOGY
+                by ASTRA
               </Typography>
             </Box>
           )}
@@ -1046,7 +1046,7 @@ function UserLayout() {
                     letterSpacing: 1,
                     textTransform: 'uppercase'
                   }}>
-                    by RUBIX TECHNOLOGY
+                    by ASTRA
                   </Typography>
                 </Box>
               </Toolbar>

@@ -144,7 +144,7 @@ function CompanyAdminReports() {
   const loadReportData = async () => {
     setLoading(true);
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       console.log('Loading report data for company:', userCompany);
 
       // Get date range based on selected period
@@ -159,7 +159,7 @@ function CompanyAdminReports() {
       const employees = employeesSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(emp => {
-          const empCompany = emp.originalCompanyName || emp.company || 'RUBIX';
+          const empCompany = emp.originalCompanyName || emp.company || '';
           return empCompany.toUpperCase() === userCompany.toUpperCase();
         });
 
@@ -169,7 +169,7 @@ function CompanyAdminReports() {
       const attendance = attendanceSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(att => {
-          const attCompany = att.originalCompanyName || att.company || 'RUBIX';
+          const attCompany = att.originalCompanyName || att.company || '';
           const attDate = att.date?.toDate ? att.date.toDate() : new Date(att.date);
           return attCompany.toUpperCase() === userCompany.toUpperCase() &&
                  isWithinInterval(attDate, dateRange);
@@ -181,7 +181,7 @@ function CompanyAdminReports() {
       const leaves = leavesSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(leave => {
-          const leaveCompany = leave.originalCompanyName || leave.company || 'RUBIX';
+          const leaveCompany = leave.originalCompanyName || leave.company || '';
           const leaveDate = leave.createdAt?.toDate ? leave.createdAt.toDate() : new Date(leave.createdAt);
           return leaveCompany.toUpperCase() === userCompany.toUpperCase() &&
                  isWithinInterval(leaveDate, dateRange);
@@ -193,7 +193,7 @@ function CompanyAdminReports() {
       const claims = claimsSnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(claim => {
-          const claimCompany = claim.originalCompanyName || claim.company || 'RUBIX';
+          const claimCompany = claim.originalCompanyName || claim.company || '';
           const claimDate = claim.createdAt?.toDate ? claim.createdAt.toDate() : new Date(claim.createdAt);
           return claimCompany.toUpperCase() === userCompany.toUpperCase() &&
                  isWithinInterval(claimDate, dateRange);
@@ -337,7 +337,7 @@ function CompanyAdminReports() {
   };
 
   const generateCSVReport = (report, metrics, dateRange) => {
-    const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+    const userCompany = user.originalCompanyName || user.company || '';
     let csvContent = `Company Report: ${report.title}\n`;
     csvContent += `Company: ${userCompany}\n`;
     csvContent += `Period: ${format(dateRange.start, 'MMM dd, yyyy')} - ${format(dateRange.end, 'MMM dd, yyyy')}\n`;

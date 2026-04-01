@@ -91,7 +91,7 @@ function CompanyAdminForgottenCheckouts() {
   const loadRequests = async () => {
     setLoading(true);
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       console.log('Loading forgotten checkout requests for company:', userCompany);
       
       // Load requests for this specific company only
@@ -107,7 +107,7 @@ function CompanyAdminForgottenCheckouts() {
 
   const loadStats = async () => {
     try {
-      const userCompany = user.originalCompanyName || user.company || 'RUBIX';
+      const userCompany = user.originalCompanyName || user.company || '';
       console.log('Loading stats for company:', userCompany);
       
       // Load stats for this specific company only

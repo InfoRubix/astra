@@ -18,7 +18,7 @@ import {
 } from '@mui/icons-material';
 import { GoogleMap, Marker, Polyline, InfoWindow, useLoadScript } from '@react-google-maps/api';
 
-const libraries = ['places'];
+const libraries = ['places', 'geometry'];
 
 /**
  * AttendanceMap Component
@@ -60,11 +60,11 @@ function AttendanceMap({ userLocation, companyLocation, distance }) {
     if (!distance) return 15;
 
     // Adjust zoom based on distance
-    if (distance < 0.5) return 16; // < 500m
-    if (distance < 1) return 15;   // < 1km
-    if (distance < 2) return 14;   // < 2km
-    if (distance < 5) return 13;   // < 5km
-    if (distance < 10) return 12;  // < 10km
+    if (distance < 500) return 16;   // < 500m
+    if (distance < 1000) return 15;  // < 1km
+    if (distance < 2000) return 14;  // < 2km
+    if (distance < 5000) return 13;  // < 5km
+    if (distance < 10000) return 12; // < 10km
     return 11; // > 10km
   }, [distance]);
 
@@ -240,7 +240,7 @@ function AttendanceMap({ userLocation, companyLocation, distance }) {
               </Typography>
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>
-              {distance.toFixed(2)} km
+              {distance >= 1000 ? `${(distance / 1000).toFixed(2)} km` : `${Math.round(distance)} m`}
             </Typography>
           </Box>
         </Paper>
